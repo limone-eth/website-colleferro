@@ -3,9 +3,12 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { getAllMatches, getStandings } from "@/lib/db";
 import { deleteMatch } from "@/lib/db-write";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
 
 if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
@@ -18,7 +21,7 @@ if (Astro.request.method === "POST") {
 }
 
 const filter = Astro.url.searchParams.get("team") ?? "Colleferro";
-const allMatches = await getAllMatches();
+const allMatches = await getAllMatches(season);
 const teams = [...new Set(allMatches.flatMap((m) => [m.home.name, m.away.name]))].sort();
 
 const matches = filter === "all"
@@ -26,14 +29,14 @@ const matches = filter === "all"
   : allMatches.filter((m) => m.home.name === filter || m.away.name === filter);
 
 // compute Colleferro position for a quick summary banner
-const standings = await getStandings();
+const standings = await getStandings(season);
 const colPos = standings.find((s) => s.team === "Colleferro");
 ---
 
 <AdminLayout title="Partite" current="matches">
   <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
     <div>
-      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Partite</p>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Partite · Stagione {formatSeason(season)}</p>
       <h1 class="font-display text-2xl text-panna">Calendario e risultati</h1>
       {colPos && (
         <p class="text-fumo text-xs mt-2">

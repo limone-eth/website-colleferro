@@ -4,8 +4,10 @@ import Hero from "@/components/Hero.astro";
 import StandingsTable from "@/components/StandingsTable.astro";
 import MatchCard from "@/components/MatchCard.astro";
 import { getColleferroMatches, getStandings } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
-const [matches, standings] = await Promise.all([getColleferroMatches(), getStandings()]);
+const season = await getCurrentSeasonYear();
+const [matches, standings] = await Promise.all([getColleferroMatches(season), getStandings(season)]);
 const finished = matches.filter((m) => m.status === "finished");
 const upcoming = matches.filter((m) => m.status === "upcoming");
 ---

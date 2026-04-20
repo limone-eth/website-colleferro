@@ -2,12 +2,15 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MatchForm from "@/components/admin/MatchForm.astro";
 import { requireAdmin } from "@/lib/auth";
-import { db, getStandings, getAllMatches } from "@/lib/db";
+import { db, getAllMatches, getTeams } from "@/lib/db";
 import { upsertMatch } from "@/lib/db-write";
-import { dateFieldsFromInput, matchdayLabel, parseMatchdayNumber, shortFor } from "@/lib/match-utils";
+import { dateFieldsFromInput, matchdayLabel, parseMatchdayNumber } from "@/lib/match-utils";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
 
 let error: string | undefined;
 
@@ -18,36 +21,40 @@ if (Astro.request.method === "POST") {
     if (!matchdayNum || matchdayNum < 1) throw new Error("Giornata non valida.");
 
     const { rows } = await db.execute({
-      sql: "SELECT matchday FROM matches WHERE matchday LIKE ?",
-      args: [`${matchdayNum}ª%`],
+      sql: "SELECT matchday FROM matches WHERE season = ? AND matchday LIKE ?",
+      args: [season, `${matchdayNum}ª%`],
     });
-    if (rows.length > 0) throw new Error(`Giornata ${matchdayNum} è già inserita.`);
+    if (rows.length > 0) throw new Error(`Giornata ${matchdayNum} è già inserita per questa stagione.`);
 
     const homeName = String(f.get("homeName") ?? "").trim();
     const awayName = String(f.get("awayName") ?? "").trim();
     if (!homeName || !awayName) throw new Error("Seleziona entrambe le squadre.");
     if (homeName === awayName) throw new Error("Casa e ospite non possono coincidere.");
 
-    const fields = dateFieldsFromInput(String(f.get("matchDate") ?? ""), String(f.get("matchTime") ?? "15:00"));
+    const teams = await getTeams(season);
+    const teamMap = new Map(teams.map((t) => [t.name, t.short]));
+    const homeShort = teamMap.get(homeName) ?? homeName.slice(0, 3).toUpperCase();
+    const awayShort = teamMap.get(awayName) ?? awayName.slice(0, 3).toUpperCase();
 
+    const fields = dateFieldsFromInput(String(f.get("matchDate") ?? ""), String(f.get("matchTime") ?? "15:00"));
     const id = `m-${crypto.randomUUID().slice(0, 8)}`;
 
     await upsertMatch({
       id,
+      season,
       matchday: matchdayLabel(matchdayNum),
       competition: String(f.get("competition") ?? ""),
       date: fields.date,
       dateLong: fields.dateLong,
       time: fields.time,
-      homeName,
-      homeShort: shortFor(homeName),
-      awayName,
-      awayShort: shortFor(awayName),
+      homeName, homeShort,
+      awayName, awayShort,
       venue: String(f.get("venue") ?? ""),
       status: String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished",
       scoreHome: f.get("scoreHome") ? Number(f.get("scoreHome")) : null,
       scoreAway: f.get("scoreAway") ? Number(f.get("scoreAway")) : null,
       ticketUrl: (f.get("ticketUrl") as string) || null,
+      kickoffTs: fields.kickoffTs,
     });
     return Astro.redirect("/admin/matches");
   } catch (e) {
@@ -55,15 +62,17 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const [standings, allMatches] = await Promise.all([getStandings(), getAllMatches()]);
-const teams = standings.map((s) => s.team);
-if (!teams.includes("Colleferro")) teams.unshift("Colleferro");
+const teamsRows = await getTeams(season);
+const teams = teamsRows.map((t) => t.name);
+if (teams.length === 0) teams.push("Colleferro");
+const allMatches = await getAllMatches(season);
 const usedMatchdays = allMatches
   .map((m) => parseMatchdayNumber(m.matchday))
   .filter((n): n is number => n !== null);
 ---
 
 <AdminLayout title="Nuova partita" current="matches">
-  <h1 class="font-display text-2xl text-panna mb-6">Nuova partita</h1>
+  <h1 class="font-display text-2xl text-panna mb-2">Nuova partita</h1>
+  <p class="text-fumo text-xs mb-6">Stagione {formatSeason(season)}</p>
   <MatchForm action="/admin/matches/new" error={error} teams={teams} usedMatchdays={usedMatchdays} />
 </AdminLayout>

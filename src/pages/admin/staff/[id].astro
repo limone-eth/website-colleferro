@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { upsertStaff } from "@/lib/db-write";
+import { formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -11,12 +12,18 @@ const { id } = Astro.params;
 if (!id) return Astro.redirect("/admin/staff");
 const idNum = Number(id);
 
+const { rows } = await db.execute({ sql: "SELECT * FROM staff WHERE id = ?", args: [idNum] });
+if (!rows[0]) return new Response("Membro non trovato", { status: 404 });
+const r = rows[0];
+const staffSeason = Number(r.season);
+
 let error: string | undefined;
 
 if (Astro.request.method === "POST") {
   const f = await Astro.request.formData();
   try {
     await upsertStaff({
+      season: staffSeason,
       name: String(f.get("name") ?? "").trim(),
       role: String(f.get("role") ?? "").trim(),
       group: String(f.get("group") ?? "") as "Tecnico" | "Medico" | "Dirigenza",
@@ -27,15 +34,12 @@ if (Astro.request.method === "POST") {
     error = (e as Error).message;
   }
 }
-
-const { rows } = await db.execute({ sql: "SELECT * FROM staff WHERE id = ?", args: [idNum] });
-if (!rows[0]) return new Response("Membro non trovato", { status: 404 });
-const r = rows[0];
 const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
 ---
 
 <AdminLayout title="Modifica staff" current="staff">
-  <h1 class="font-display text-2xl text-panna mb-6">Modifica membro staff</h1>
+  <h1 class="font-display text-2xl text-panna mb-2">Modifica membro staff</h1>
+  <p class="text-fumo text-xs mb-6">Stagione {formatSeason(staffSeason)}</p>
 
   <form method="post" class="bg-grafite border border-carbone p-6 grid md:grid-cols-5 gap-4 items-end">
     {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2 md:col-span-5">{error}</p>}

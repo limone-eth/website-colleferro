@@ -1,0 +1,132 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getAllSeasons, createSeason, setCurrentSeason } from "@/lib/season";
+import { db } from "@/lib/db";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+let error: string | undefined;
+let success: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "create") {
+      const year = Number(f.get("year") ?? 0);
+      if (!year || year < 2000 || year > 2100) throw new Error("Anno non valido.");
+      await createSeason(year);
+      success = `Stagione ${year}/${String((year + 1) % 100).padStart(2, "0")} creata.`;
+    } else if (action === "set-current") {
+      const year = Number(f.get("year") ?? 0);
+      await setCurrentSeason(year);
+      success = "Stagione corrente aggiornata.";
+    } else if (action === "clone-roster") {
+      const fromYear = Number(f.get("fromYear"));
+      const toYear = Number(f.get("toYear"));
+      if (!fromYear || !toYear) throw new Error("Parametri mancanti.");
+      await db.execute({
+        sql: `INSERT INTO squad (season, number, name, role, dob, nationality)
+              SELECT ?, number, name, role, dob, nationality FROM squad WHERE season = ?`,
+        args: [toYear, fromYear],
+      });
+      await db.execute({
+        sql: `INSERT INTO staff (season, name, role, grp, ordering)
+              SELECT ?, name, role, grp, ordering FROM staff WHERE season = ?`,
+        args: [toYear, fromYear],
+      });
+      await db.execute({
+        sql: `INSERT INTO sponsors (season, name, tier, url, ordering)
+              SELECT ?, name, tier, url, ordering FROM sponsors WHERE season = ?`,
+        args: [toYear, fromYear],
+      });
+      await db.execute({
+        sql: `INSERT OR IGNORE INTO teams (season, name, short)
+              SELECT ?, name, short FROM teams WHERE season = ?`,
+        args: [toYear, fromYear],
+      });
+      success = `Rosa, staff, sponsor e squadre copiate da ${fromYear} a ${toYear}.`;
+    }
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const seasons = await getAllSeasons();
+---
+
+<AdminLayout title="Stagioni" current="seasons">
+  <div class="mb-6 border-b border-carbone pb-4">
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Stagioni</p>
+    <h1 class="font-display text-2xl text-panna">Gestione stagioni</h1>
+    <p class="text-fumo text-xs mt-2">La stagione marcata ★ è quella mostrata sul sito pubblico. L'admin può lavorare su una stagione diversa tramite il selettore in alto.</p>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+  {success && <p class="mb-4 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">{success}</p>}
+
+  <div class="grid md:grid-cols-2 gap-6 mb-8">
+    <form method="post" class="bg-grafite border border-carbone p-5 space-y-3">
+      <input type="hidden" name="action" value="create" />
+      <h2 class="font-display text-lg text-panna">Crea nuova stagione</h2>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Anno di inizio (es. 2026)</span>
+        <input type="number" name="year" required min="2000" max="2100" placeholder="2026" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <button type="submit" class="btn btn-primary">Crea stagione</button>
+    </form>
+
+    <form method="post" class="bg-grafite border border-carbone p-5 space-y-3">
+      <input type="hidden" name="action" value="clone-roster" />
+      <h2 class="font-display text-lg text-panna">Copia contenuti tra stagioni</h2>
+      <p class="text-fumo text-xs">Copia rosa, staff, sponsor e squadre partecipanti dalla stagione di origine a quella di destinazione.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="font-display text-xs uppercase text-fumo block mb-1">Origine</span>
+          <select name="fromYear" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+            {seasons.map((s) => <option value={s.year}>{s.label}</option>)}
+          </select>
+        </label>
+        <label class="block">
+          <span class="font-display text-xs uppercase text-fumo block mb-1">Destinazione</span>
+          <select name="toYear" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+            {seasons.map((s) => <option value={s.year}>{s.label}</option>)}
+          </select>
+        </label>
+      </div>
+      <button type="submit" class="btn btn-ghost">Copia contenuti</button>
+    </form>
+  </div>
+
+  <h2 class="font-display text-lg text-panna mb-3">Tutte le stagioni</h2>
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4">Anno</th>
+        <th class="py-3 pr-4">Label</th>
+        <th class="py-3 pr-4">Corrente</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {seasons.map((s) => (
+        <tr class="border-b border-carbone/60">
+          <td class="py-3 pr-4 text-panna font-display tabular-nums">{s.year}</td>
+          <td class="py-3 pr-4 text-panna">{s.label}</td>
+          <td class="py-3 pr-4">{s.isCurrent ? <span class="text-oro">★ corrente</span> : ""}</td>
+          <td class="py-3 text-right">
+            {!s.isCurrent && (
+              <form method="post" class="inline">
+                <input type="hidden" name="action" value="set-current" />
+                <input type="hidden" name="year" value={s.year} />
+                <button type="submit" class="btn btn-ghost text-xs">Imposta corrente</button>
+              </form>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>

@@ -2,8 +2,9 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import { getStaff } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
-const staff = await getStaff();
+const staff = await getStaff(await getCurrentSeasonYear());
 
 const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
 const labels: Record<(typeof groups)[number], string> = {

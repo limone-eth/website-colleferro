@@ -2,21 +2,24 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
 
+const season = await resolveAdminSeason(Astro.cookies);
+
 const counts = await Promise.all([
-  db.execute("SELECT COUNT(*) AS c FROM matches"),
-  db.execute("SELECT COUNT(*) AS c FROM news"),
-  db.execute("SELECT COUNT(*) AS c FROM squad"),
-  db.execute("SELECT COUNT(*) AS c FROM staff"),
-  db.execute("SELECT COUNT(*) AS c FROM sponsors"),
+  db.execute({ sql: "SELECT COUNT(*) AS c FROM matches WHERE season = ?", args: [season] }),
+  db.execute({ sql: "SELECT COUNT(*) AS c FROM news", args: [] }),
+  db.execute({ sql: "SELECT COUNT(*) AS c FROM squad WHERE season = ?", args: [season] }),
+  db.execute({ sql: "SELECT COUNT(*) AS c FROM staff WHERE season = ?", args: [season] }),
+  db.execute({ sql: "SELECT COUNT(*) AS c FROM sponsors WHERE season = ?", args: [season] }),
 ]).then((rs) => rs.map((r) => Number((r.rows[0] as { c: number }).c)));
 
 const tiles = [
   { href: "/admin/matches", label: "Partite", count: counts[0], hint: "Classifica derivata dai risultati" },
-  { href: "/admin/news", label: "News", count: counts[1], hint: "Articoli e comunicati" },
+  { href: "/admin/news", label: "News", count: counts[1], hint: "Articoli e comunicati (cross-stagione)" },
   { href: "/admin/squad", label: "Rosa", count: counts[2], hint: "Giocatori prima squadra" },
   { href: "/admin/staff", label: "Staff", count: counts[3], hint: "Staff tecnico, medico, dirigenza" },
   { href: "/admin/sponsors", label: "Sponsor", count: counts[4], hint: "Partner del club" },
@@ -24,7 +27,7 @@ const tiles = [
 ---
 
 <AdminLayout title="Dashboard" current="home">
-  <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-2">Dashboard</p>
+  <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-2">Dashboard · Stagione {formatSeason(season)}</p>
   <h1 class="font-display text-3xl text-panna mb-8">Gestione contenuti</h1>
 
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -3,9 +3,12 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { getSponsors } from "@/lib/db";
 import { upsertSponsor, deleteSponsor } from "@/lib/db-write";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
 
 let error: string | undefined;
 
@@ -17,6 +20,7 @@ if (Astro.request.method === "POST") {
       await deleteSponsor(Number(f.get("id")));
     } else if (action === "create") {
       await upsertSponsor({
+        season,
         name: String(f.get("name") ?? "").trim(),
         tier: String(f.get("tier") ?? "") as "Main" | "Technical" | "Official" | "Local",
         url: (f.get("url") as string) || null,
@@ -29,13 +33,13 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const sponsors = await getSponsors();
+const sponsors = await getSponsors(season);
 const tiers = ["Main", "Technical", "Official", "Local"] as const;
 ---
 
 <AdminLayout title="Sponsor" current="sponsors">
   <div class="mb-6 border-b border-carbone pb-4">
-    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Sponsor</p>
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Sponsor · Stagione {formatSeason(season)}</p>
     <h1 class="font-display text-2xl text-panna">Partner del club</h1>
   </div>
 

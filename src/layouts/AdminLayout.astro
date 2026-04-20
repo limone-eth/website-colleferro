@@ -1,11 +1,15 @@
 ---
 import "@/styles/global.css";
+import { getAllSeasons, resolveAdminSeason } from "@/lib/season";
 
 interface Props {
   title: string;
   current?: string;
 }
 const { title, current } = Astro.props;
+
+const seasons = await getAllSeasons();
+const activeSeason = await resolveAdminSeason(Astro.cookies);
 
 const nav = [
   { href: "/admin", label: "Dashboard", key: "home" },
@@ -14,6 +18,7 @@ const nav = [
   { href: "/admin/squad", label: "Rosa", key: "squad" },
   { href: "/admin/staff", label: "Staff", key: "staff" },
   { href: "/admin/sponsors", label: "Sponsor", key: "sponsors" },
+  { href: "/admin/seasons", label: "Stagioni", key: "seasons" },
 ];
 ---
 
@@ -48,6 +53,16 @@ const nav = [
             </a>
           ))}
         </nav>
+        <form method="post" action="/admin/season" class="flex items-center gap-2">
+          <span class="font-display text-[0.65rem] tracking-[0.2em] uppercase text-fumo">Stagione</span>
+          <select name="year" onchange="this.form.submit()" class="bg-nero border border-carbone px-2 py-1 text-panna text-xs font-display">
+            {seasons.map((s) => (
+              <option value={s.year} selected={s.year === activeSeason}>
+                {s.label}{s.isCurrent ? " ★" : ""}
+              </option>
+            ))}
+          </select>
+        </form>
         <form method="post" action="/admin/logout">
           <button type="submit" class="btn btn-ghost text-xs">Esci</button>
         </form>

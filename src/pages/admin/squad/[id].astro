@@ -4,13 +4,19 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { upsertPlayer } from "@/lib/db-write";
 import { NATIONALITIES } from "@/lib/nationalities";
+import { formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
 
-const { number } = Astro.params;
-if (!number) return Astro.redirect("/admin/squad");
-const num = Number(number);
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/squad");
+const idNum = Number(id);
+
+const { rows } = await db.execute({ sql: "SELECT * FROM squad WHERE id = ?", args: [idNum] });
+if (!rows[0]) return new Response("Giocatore non trovato", { status: 404 });
+const r = rows[0];
+const playerSeason = Number(r.season);
 
 let error: string | undefined;
 
@@ -18,26 +24,25 @@ if (Astro.request.method === "POST") {
   const f = await Astro.request.formData();
   try {
     await upsertPlayer({
+      season: playerSeason,
       number: Number(f.get("number")),
       name: String(f.get("name") ?? "").trim(),
       role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
       dob: (f.get("dob") as string) || null,
       nationality: (f.get("nationality") as string) || null,
-    }, num);
+    }, idNum);
     return Astro.redirect("/admin/squad");
   } catch (e) {
     error = (e as Error).message;
   }
 }
 
-const { rows } = await db.execute({ sql: "SELECT * FROM squad WHERE number = ?", args: [num] });
-if (!rows[0]) return new Response("Giocatore non trovato", { status: 404 });
-const r = rows[0];
 const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
 ---
 
 <AdminLayout title="Modifica giocatore" current="squad">
-  <h1 class="font-display text-2xl text-panna mb-6">Modifica giocatore #{r.number}</h1>
+  <h1 class="font-display text-2xl text-panna mb-2">Modifica giocatore #{r.number}</h1>
+  <p class="text-fumo text-xs mb-6">Stagione {formatSeason(playerSeason)}</p>
 
   <form method="post" class="bg-grafite border border-carbone p-6 grid md:grid-cols-6 gap-4 items-end">
     {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2 md:col-span-6">{error}</p>}

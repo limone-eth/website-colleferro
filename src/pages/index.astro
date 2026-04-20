@@ -14,14 +14,16 @@ import {
   getStandings,
   getSponsors,
 } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
+const season = await getCurrentSeasonYear();
 const [nextMatch, lastResults, allNews, featuredNews, standings, sponsors] = await Promise.all([
-  getNextMatch(),
-  getLastResults(3),
+  getNextMatch(season),
+  getLastResults(season, 3),
   getAllNews(),
   getFeaturedNews(),
-  getStandings(),
-  getSponsors(),
+  getStandings(season),
+  getSponsors(season),
 ]);
 
 const topStandings = standings.slice(0, 8);

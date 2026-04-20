@@ -2,8 +2,9 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import { getNextMatch } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
-const nextMatch = await getNextMatch();
+const nextMatch = await getNextMatch(await getCurrentSeasonYear());
 
 const settori = [
   {

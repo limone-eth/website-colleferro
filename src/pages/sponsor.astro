@@ -3,8 +3,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import SponsorStrip from "@/components/SponsorStrip.astro";
 import { getSponsors } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
-const sponsors = await getSponsors();
+const sponsors = await getSponsors(await getCurrentSeasonYear());
 
 const tiers = ["Main", "Technical", "Official", "Local"] as const;
 const labels: Record<(typeof tiers)[number], string> = {

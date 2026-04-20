@@ -4,9 +4,12 @@ import { requireAdmin } from "@/lib/auth";
 import { getSquad } from "@/lib/db";
 import { upsertPlayer, deletePlayer } from "@/lib/db-write";
 import { NATIONALITIES } from "@/lib/nationalities";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
 
 let error: string | undefined;
 
@@ -15,9 +18,10 @@ if (Astro.request.method === "POST") {
   const action = f.get("action");
   try {
     if (action === "delete") {
-      await deletePlayer(Number(f.get("number")));
+      await deletePlayer(Number(f.get("id")));
     } else if (action === "create") {
       await upsertPlayer({
+        season,
         number: Number(f.get("number")),
         name: String(f.get("name") ?? "").trim(),
         role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
@@ -31,13 +35,13 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const squad = await getSquad();
+const squad = await getSquad(season);
 const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
 ---
 
 <AdminLayout title="Rosa" current="squad">
   <div class="mb-6 border-b border-carbone pb-4">
-    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Rosa</p>
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Rosa · Stagione {formatSeason(season)}</p>
     <h1 class="font-display text-2xl text-panna">Prima squadra</h1>
   </div>
 
@@ -97,10 +101,10 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
           <td class="py-3 pr-4 text-fumo">{p.dob ?? "—"}</td>
           <td class="py-3 pr-4 text-fumo">{p.nationality ?? "—"}</td>
           <td class="py-3 flex gap-2 justify-end">
-            <a href={`/admin/squad/${p.number}`} class="btn btn-ghost text-xs">Modifica</a>
+            <a href={`/admin/squad/${p.id}`} class="btn btn-ghost text-xs">Modifica</a>
             <form method="post" onsubmit="return confirm('Eliminare questo giocatore?')">
               <input type="hidden" name="action" value="delete" />
-              <input type="hidden" name="number" value={p.number} />
+              <input type="hidden" name="id" value={p.id} />
               <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
             </form>
           </td>

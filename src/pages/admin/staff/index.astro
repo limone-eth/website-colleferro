@@ -3,9 +3,12 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { getStaff } from "@/lib/db";
 import { upsertStaff, deleteStaff } from "@/lib/db-write";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
 
 let error: string | undefined;
 
@@ -17,6 +20,7 @@ if (Astro.request.method === "POST") {
       await deleteStaff(Number(f.get("id")));
     } else if (action === "create") {
       await upsertStaff({
+        season,
         name: String(f.get("name") ?? "").trim(),
         role: String(f.get("role") ?? "").trim(),
         group: String(f.get("group") ?? "") as "Tecnico" | "Medico" | "Dirigenza",
@@ -29,13 +33,13 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const staff = await getStaff();
+const staff = await getStaff(season);
 const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
 ---
 
 <AdminLayout title="Staff" current="staff">
   <div class="mb-6 border-b border-carbone pb-4">
-    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Staff</p>
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Staff · Stagione {formatSeason(season)}</p>
     <h1 class="font-display text-2xl text-panna">Staff tecnico, medico e dirigenza</h1>
   </div>
 

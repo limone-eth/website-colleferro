@@ -3,8 +3,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import PlayerCard from "@/components/PlayerCard.astro";
 import { getSquad } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
-const squad = await getSquad();
+const squad = await getSquad(await getCurrentSeasonYear());
 
 const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
 const byRole = Object.fromEntries(

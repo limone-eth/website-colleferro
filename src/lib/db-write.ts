@@ -1,23 +1,8 @@
 import { db } from "./db";
 
-const ITALIAN_MONTHS: Record<string, number> = {
-  gennaio: 0, febbraio: 1, marzo: 2, aprile: 3, maggio: 4, giugno: 5,
-  luglio: 6, agosto: 7, settembre: 8, ottobre: 9, novembre: 10, dicembre: 11,
-};
-
-export function parseKickoff(dateLong: string, time: string): number {
-  const m = dateLong.match(/(\d{1,2})\s+(\S+)\s+(\d{4})/i);
-  if (!m) throw new Error(`Formato data non valido: "${dateLong}" (atteso: "Domenica 8 Settembre 2025")`);
-  const day = Number(m[1]);
-  const month = ITALIAN_MONTHS[m[2].toLowerCase()];
-  const year = Number(m[3]);
-  if (month === undefined) throw new Error(`Mese sconosciuto: ${m[2]}`);
-  const [hh, mm] = time.split(":").map(Number);
-  return Math.floor(Date.UTC(year, month, day, hh - 2, mm) / 1000);
-}
-
 export type MatchInput = {
   id: string;
+  season: number;
   matchday: string;
   competition: string;
   date: string;
@@ -32,31 +17,31 @@ export type MatchInput = {
   scoreHome?: number | null;
   scoreAway?: number | null;
   ticketUrl?: string | null;
+  kickoffTs: number;
 };
 
 export async function upsertMatch(m: MatchInput, existingId?: string) {
-  const kickoff = parseKickoff(m.dateLong, m.time);
   if (existingId) {
     await db.execute({
-      sql: `UPDATE matches SET id=?, matchday=?, competition=?, date=?, date_long=?, time=?, home_name=?, home_short=?, away_name=?, away_short=?, venue=?, status=?, score_home=?, score_away=?, ticket_url=?, kickoff_ts=?, updated_at=unixepoch() WHERE id=?`,
+      sql: `UPDATE matches SET season=?, matchday=?, competition=?, date=?, date_long=?, time=?, home_name=?, home_short=?, away_name=?, away_short=?, venue=?, status=?, score_home=?, score_away=?, ticket_url=?, kickoff_ts=?, updated_at=unixepoch() WHERE id=?`,
       args: [
-        m.id, m.matchday, m.competition, m.date, m.dateLong, m.time,
+        m.season, m.matchday, m.competition, m.date, m.dateLong, m.time,
         m.homeName, m.homeShort, m.awayName, m.awayShort,
         m.venue, m.status,
         m.scoreHome ?? null, m.scoreAway ?? null,
-        m.ticketUrl ?? null, kickoff,
+        m.ticketUrl ?? null, m.kickoffTs,
         existingId,
       ],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO matches (id, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, ticket_url, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      sql: `INSERT INTO matches (id, season, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, ticket_url, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [
-        m.id, m.matchday, m.competition, m.date, m.dateLong, m.time,
+        m.id, m.season, m.matchday, m.competition, m.date, m.dateLong, m.time,
         m.homeName, m.homeShort, m.awayName, m.awayShort,
         m.venue, m.status,
         m.scoreHome ?? null, m.scoreAway ?? null,
-        m.ticketUrl ?? null, kickoff,
+        m.ticketUrl ?? null, m.kickoffTs,
       ],
     });
   }
@@ -97,6 +82,7 @@ export async function deleteNews(slug: string) {
 }
 
 export type PlayerInput = {
+  season: number;
   number: number;
   name: string;
   role: "Portiere" | "Difensore" | "Centrocampista" | "Attaccante";
@@ -104,25 +90,26 @@ export type PlayerInput = {
   nationality?: string | null;
 };
 
-export async function upsertPlayer(p: PlayerInput, existingNumber?: number) {
-  if (existingNumber != null) {
+export async function upsertPlayer(p: PlayerInput, existingId?: number) {
+  if (existingId != null) {
     await db.execute({
-      sql: `UPDATE squad SET number=?, name=?, role=?, dob=?, nationality=? WHERE number=?`,
-      args: [p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null, existingNumber],
+      sql: `UPDATE squad SET season=?, number=?, name=?, role=?, dob=?, nationality=? WHERE id=?`,
+      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null, existingId],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO squad (number, name, role, dob, nationality) VALUES (?,?,?,?,?)`,
-      args: [p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null],
+      sql: `INSERT INTO squad (season, number, name, role, dob, nationality) VALUES (?,?,?,?,?,?)`,
+      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null],
     });
   }
 }
 
-export async function deletePlayer(number: number) {
-  await db.execute({ sql: "DELETE FROM squad WHERE number = ?", args: [number] });
+export async function deletePlayer(id: number) {
+  await db.execute({ sql: "DELETE FROM squad WHERE id = ?", args: [id] });
 }
 
 export type StaffInput = {
+  season: number;
   name: string;
   role: string;
   group: "Tecnico" | "Medico" | "Dirigenza";
@@ -132,13 +119,13 @@ export type StaffInput = {
 export async function upsertStaff(s: StaffInput, id?: number) {
   if (id != null) {
     await db.execute({
-      sql: `UPDATE staff SET name=?, role=?, grp=?, ordering=? WHERE id=?`,
-      args: [s.name, s.role, s.group, s.ordering, id],
+      sql: `UPDATE staff SET season=?, name=?, role=?, grp=?, ordering=? WHERE id=?`,
+      args: [s.season, s.name, s.role, s.group, s.ordering, id],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO staff (name, role, grp, ordering) VALUES (?,?,?,?)`,
-      args: [s.name, s.role, s.group, s.ordering],
+      sql: `INSERT INTO staff (season, name, role, grp, ordering) VALUES (?,?,?,?,?)`,
+      args: [s.season, s.name, s.role, s.group, s.ordering],
     });
   }
 }
@@ -148,6 +135,7 @@ export async function deleteStaff(id: number) {
 }
 
 export type SponsorInput = {
+  season: number;
   name: string;
   tier: "Main" | "Technical" | "Official" | "Local";
   url?: string | null;
@@ -157,17 +145,41 @@ export type SponsorInput = {
 export async function upsertSponsor(s: SponsorInput, id?: number) {
   if (id != null) {
     await db.execute({
-      sql: `UPDATE sponsors SET name=?, tier=?, url=?, ordering=? WHERE id=?`,
-      args: [s.name, s.tier, s.url ?? null, s.ordering, id],
+      sql: `UPDATE sponsors SET season=?, name=?, tier=?, url=?, ordering=? WHERE id=?`,
+      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering, id],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO sponsors (name, tier, url, ordering) VALUES (?,?,?,?)`,
-      args: [s.name, s.tier, s.url ?? null, s.ordering],
+      sql: `INSERT INTO sponsors (season, name, tier, url, ordering) VALUES (?,?,?,?,?)`,
+      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering],
     });
   }
 }
 
 export async function deleteSponsor(id: number) {
   await db.execute({ sql: "DELETE FROM sponsors WHERE id = ?", args: [id] });
+}
+
+export type TeamInput = {
+  season: number;
+  name: string;
+  short: string;
+};
+
+export async function upsertTeam(t: TeamInput, id?: number) {
+  if (id != null) {
+    await db.execute({
+      sql: `UPDATE teams SET season=?, name=?, short=? WHERE id=?`,
+      args: [t.season, t.name, t.short, id],
+    });
+  } else {
+    await db.execute({
+      sql: `INSERT INTO teams (season, name, short) VALUES (?,?,?) ON CONFLICT(season, name) DO UPDATE SET short=excluded.short`,
+      args: [t.season, t.name, t.short],
+    });
+  }
+}
+
+export async function deleteTeam(id: number) {
+  await db.execute({ sql: "DELETE FROM teams WHERE id = ?", args: [id] });
 }
