@@ -34,6 +34,7 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
         <button type="button" class="btn btn-ghost text-xs text-rosso uploader-clear">Rimuovi</button>
       </div>
       <p class="text-fumo text-xs">{hint ?? "jpg, png, webp · max 5MB"}</p>
+      <p class="uploader-error text-xs text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2 hidden" role="alert"></p>
       <input
         type="url"
         name={name}
@@ -89,17 +90,36 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
     const preview = root.querySelector<HTMLDivElement>(".preview");
 
     const cl = await loadWidget();
+    const errorEl = root.querySelector<HTMLParagraphElement>(".uploader-error");
+    const clearError = () => { if (errorEl) { errorEl.textContent = ""; errorEl.classList.add("hidden"); } };
+    const showError = (msg: string) => {
+      if (!errorEl) return;
+      errorEl.textContent = msg;
+      errorEl.classList.remove("hidden");
+    };
+
+    clearError();
 
     const widget = cl.createUploadWidget(
       {
         cloudName,
         apiKey,
         folder,
+        language: "it",
         sources: ["local", "url", "camera"],
         multiple: false,
         resourceType: "image",
         clientAllowedFormats: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
         maxFileSize: 5_000_000,
+        text: {
+          it: {
+            "queue.mini_title": "Caricato",
+            "queue.title": "Coda upload",
+            "local.browse": "Sfoglia",
+            "local.dd_title_single": "Trascina qui la foto",
+            "selection_counter.selected_counter": "Selezionata",
+          },
+        },
         uploadSignature: async (
           callback: (sig: string) => void,
           paramsToSign: Record<string, unknown>,
@@ -110,7 +130,12 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(paramsToSign),
             });
-            if (!res.ok) throw new Error(`sign ${res.status}`);
+            if (!res.ok) {
+              showError(res.status === 401
+                ? "Sessione admin scaduta. Ricarica la pagina e rientra."
+                : `Errore firma upload (${res.status}). Riprova.`);
+              throw new Error(`sign ${res.status}`);
+            }
             const { signature } = await res.json();
             callback(signature);
           } catch (e) {
@@ -120,10 +145,21 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
       },
       (err, result) => {
         if (err) {
+          const msg = (err as { message?: string; statusText?: string }).message
+            ?? (err as { statusText?: string }).statusText
+            ?? "Errore sconosciuto durante l'upload.";
+          if (/size|too large/i.test(msg)) {
+            showError("Immagine troppo grande. Massimo 5MB.");
+          } else if (/format|not allowed|invalid/i.test(msg)) {
+            showError("Formato non supportato. Usa jpg, png, webp, gif o avif.");
+          } else {
+            showError(`Errore upload: ${msg}`);
+          }
           console.error("Cloudinary error", err);
           return;
         }
         if (result?.event === "success" && result.info?.secure_url && input && preview) {
+          clearError();
           const url = result.info.secure_url;
           input.value = url;
           preview.innerHTML = `<img src="${url}" alt="" class="w-full h-full object-cover" />`;

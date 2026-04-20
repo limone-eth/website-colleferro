@@ -31,6 +31,7 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
     <button type="button" data-cmd="redo" class="toolbar-btn" title="Ripeti (⌘⇧Z)">↷</button>
   </div>
   <div class="rich-editor__surface min-h-[280px]"></div>
+  <p class="rich-editor__error hidden text-xs text-rosso border-t border-rosso/40 bg-rosso/10 px-3 py-2" role="alert"></p>
   <textarea name={name} class="hidden" aria-hidden="true">{value}</textarea>
 </div>
 
@@ -111,7 +112,11 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
     });
   }
 
-  async function pickImageUrl(cloudName: string, apiKey: string): Promise<string | null> {
+  async function pickImageUrl(
+    cloudName: string,
+    apiKey: string,
+    onError: (msg: string) => void,
+  ): Promise<string | null> {
     const cl = await loadCloudinary();
     return new Promise((resolve) => {
       const widget = cl.createUploadWidget(
@@ -119,6 +124,7 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
           cloudName,
           apiKey,
           folder: "colleferro/news",
+          language: "it",
           sources: ["local", "url", "camera"],
           multiple: false,
           resourceType: "image",
@@ -134,7 +140,12 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(paramsToSign),
               });
-              if (!res.ok) throw new Error(`sign ${res.status}`);
+              if (!res.ok) {
+                onError(res.status === 401
+                  ? "Sessione scaduta. Rientra in admin."
+                  : `Errore firma (${res.status}).`);
+                throw new Error(`sign ${res.status}`);
+              }
               const { signature } = await res.json();
               callback(signature);
             } catch (e) {
@@ -143,7 +154,14 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
           },
         },
         (err, result) => {
-          if (err) { console.error(err); resolve(null); return; }
+          if (err) {
+            const msg = (err as { message?: string }).message ?? "Errore sconosciuto";
+            if (/size|too large/i.test(msg)) onError("Immagine troppo grande. Massimo 5MB.");
+            else if (/format|invalid/i.test(msg)) onError("Formato non supportato.");
+            else onError(`Errore upload: ${msg}`);
+            resolve(null);
+            return;
+          }
           if (result?.event === "success" && result.info?.secure_url) {
             resolve(result.info.secure_url);
           } else if (result?.event === "close") {
@@ -237,7 +255,15 @@ const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
               window.alert("Cloudinary non configurato.");
               return;
             }
-            pickImageUrl(cloudName, apiKey).then((url) => {
+            const errEl = root.querySelector<HTMLParagraphElement>(".rich-editor__error");
+            const onError = (msg: string) => {
+              if (errEl) {
+                errEl.textContent = msg;
+                errEl.classList.remove("hidden");
+                setTimeout(() => errEl.classList.add("hidden"), 6000);
+              }
+            };
+            pickImageUrl(cloudName, apiKey, onError).then((url) => {
               if (url) editor.chain().focus().setImage({ src: url, alt: "" }).run();
             });
             break;
