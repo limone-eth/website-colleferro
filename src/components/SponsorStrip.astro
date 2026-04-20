@@ -3,6 +3,7 @@ interface Sponsor {
   name: string;
   tier: "Main" | "Technical" | "Official" | "Local";
   url?: string;
+  logoUrl?: string;
 }
 interface Props {
   sponsors: Sponsor[];
@@ -17,14 +18,23 @@ const { sponsors, variant = "strip" } = Astro.props;
       {sponsors.map((s) => (
         <a
           href={s.url || "#"}
-          class="group flex flex-col items-center gap-1 text-fumo hover:text-panna transition-colors"
+          class="group flex flex-col items-center gap-2 text-fumo hover:text-panna transition-colors"
         >
           <span class="font-display text-[0.6rem] tracking-[0.25em] uppercase text-fumo/70">
             {s.tier}
           </span>
-          <span class="font-display text-xl md:text-2xl tracking-wide grayscale group-hover:grayscale-0">
-            {s.name}
-          </span>
+          {s.logoUrl ? (
+            <img
+              src={s.logoUrl}
+              alt={s.name}
+              loading="lazy"
+              class="h-12 md:h-14 w-auto object-contain grayscale group-hover:grayscale-0 transition-all"
+            />
+          ) : (
+            <span class="font-display text-xl md:text-2xl tracking-wide grayscale group-hover:grayscale-0">
+              {s.name}
+            </span>
+          )}
         </a>
       ))}
     </div>
@@ -33,14 +43,23 @@ const { sponsors, variant = "strip" } = Astro.props;
       {sponsors.map((s) => (
         <a
           href={s.url || "#"}
-          class="group bg-grafite border border-carbone hover:border-oro/60 p-6 text-center transition-colors"
+          class="group bg-grafite border border-carbone hover:border-oro/60 p-6 text-center transition-colors flex flex-col items-center justify-center gap-3 min-h-[8rem]"
         >
-          <span class="block font-display text-[0.6rem] tracking-[0.25em] uppercase text-oro mb-2">
+          <span class="block font-display text-[0.6rem] tracking-[0.25em] uppercase text-oro">
             {s.tier}
           </span>
-          <span class="font-display text-lg md:text-xl text-panna group-hover:text-oro transition-colors">
-            {s.name}
-          </span>
+          {s.logoUrl ? (
+            <img
+              src={s.logoUrl}
+              alt={s.name}
+              loading="lazy"
+              class="h-14 md:h-16 w-auto object-contain"
+            />
+          ) : (
+            <span class="font-display text-lg md:text-xl text-panna group-hover:text-oro transition-colors">
+              {s.name}
+            </span>
+          )}
         </a>
       ))}
     </div>

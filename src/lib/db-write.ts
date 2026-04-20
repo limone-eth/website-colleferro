@@ -88,18 +88,19 @@ export type PlayerInput = {
   role: "Portiere" | "Difensore" | "Centrocampista" | "Attaccante";
   dob?: string | null;
   nationality?: string | null;
+  photoUrl?: string | null;
 };
 
 export async function upsertPlayer(p: PlayerInput, existingId?: number) {
   if (existingId != null) {
     await db.execute({
-      sql: `UPDATE squad SET season=?, number=?, name=?, role=?, dob=?, nationality=? WHERE id=?`,
-      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null, existingId],
+      sql: `UPDATE squad SET season=?, number=?, name=?, role=?, dob=?, nationality=?, photo_url=? WHERE id=?`,
+      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null, p.photoUrl ?? null, existingId],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO squad (season, number, name, role, dob, nationality) VALUES (?,?,?,?,?,?)`,
-      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null],
+      sql: `INSERT INTO squad (season, number, name, role, dob, nationality, photo_url) VALUES (?,?,?,?,?,?,?)`,
+      args: [p.season, p.number, p.name, p.role, p.dob ?? null, p.nationality ?? null, p.photoUrl ?? null],
     });
   }
 }
@@ -140,18 +141,19 @@ export type SponsorInput = {
   tier: "Main" | "Technical" | "Official" | "Local";
   url?: string | null;
   ordering: number;
+  logoUrl?: string | null;
 };
 
 export async function upsertSponsor(s: SponsorInput, id?: number) {
   if (id != null) {
     await db.execute({
-      sql: `UPDATE sponsors SET season=?, name=?, tier=?, url=?, ordering=? WHERE id=?`,
-      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering, id],
+      sql: `UPDATE sponsors SET season=?, name=?, tier=?, url=?, ordering=?, logo_url=? WHERE id=?`,
+      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering, s.logoUrl ?? null, id],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO sponsors (season, name, tier, url, ordering) VALUES (?,?,?,?,?)`,
-      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering],
+      sql: `INSERT INTO sponsors (season, name, tier, url, ordering, logo_url) VALUES (?,?,?,?,?,?)`,
+      args: [s.season, s.name, s.tier, s.url ?? null, s.ordering, s.logoUrl ?? null],
     });
   }
 }

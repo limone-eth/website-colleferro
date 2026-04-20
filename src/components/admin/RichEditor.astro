@@ -5,9 +5,11 @@ interface Props {
   placeholder?: string;
 }
 const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
+const cloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
+const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
 ---
 
-<div class="rich-editor border border-carbone bg-nero" data-placeholder={placeholder}>
+<div class="rich-editor border border-carbone bg-nero" data-placeholder={placeholder} data-cloud={cloudName} data-apikey={apiKey}>
   <div class="rich-editor__toolbar flex flex-wrap gap-1 border-b border-carbone bg-grafite p-2">
     <button type="button" data-cmd="bold" class="toolbar-btn" title="Grassetto (⌘B)"><strong>B</strong></button>
     <button type="button" data-cmd="italic" class="toolbar-btn" title="Corsivo (⌘I)"><em>I</em></button>
@@ -23,6 +25,7 @@ const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
     <span class="toolbar-divider"></span>
     <button type="button" data-cmd="link" class="toolbar-btn" title="Link">🔗</button>
     <button type="button" data-cmd="unlink" class="toolbar-btn" title="Rimuovi link">⊘</button>
+    <button type="button" data-cmd="image" class="toolbar-btn" title="Inserisci immagine">🖼</button>
     <span class="toolbar-divider"></span>
     <button type="button" data-cmd="undo" class="toolbar-btn" title="Annulla (⌘Z)">↶</button>
     <button type="button" data-cmd="redo" class="toolbar-btn" title="Ripeti (⌘⇧Z)">↷</button>
@@ -76,7 +79,81 @@ const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
   import { Editor } from "@tiptap/core";
   import StarterKit from "@tiptap/starter-kit";
   import Link from "@tiptap/extension-link";
+  import Image from "@tiptap/extension-image";
   import { Placeholder } from "@tiptap/extensions/placeholder";
+
+  type CloudinaryResult = { event: string; info?: { secure_url?: string } };
+  type WidgetHandle = { open(): void };
+  type CloudinaryGlobal = {
+    createUploadWidget(
+      options: Record<string, unknown>,
+      cb: (err: unknown, result: CloudinaryResult) => void,
+    ): WidgetHandle;
+  };
+
+  function loadCloudinary(): Promise<CloudinaryGlobal> {
+    return new Promise((resolve, reject) => {
+      const existing = (window as unknown as { cloudinary?: CloudinaryGlobal }).cloudinary;
+      if (existing) return resolve(existing);
+      const src = "https://upload-widget.cloudinary.com/global/all.js";
+      let s = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+      if (!s) {
+        s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        document.head.appendChild(s);
+      }
+      s.addEventListener("load", () => {
+        const cl = (window as unknown as { cloudinary?: CloudinaryGlobal }).cloudinary;
+        cl ? resolve(cl) : reject(new Error("Cloudinary widget not available"));
+      });
+      s.addEventListener("error", () => reject(new Error("Failed to load Cloudinary widget")));
+    });
+  }
+
+  async function pickImageUrl(cloudName: string, apiKey: string): Promise<string | null> {
+    const cl = await loadCloudinary();
+    return new Promise((resolve) => {
+      const widget = cl.createUploadWidget(
+        {
+          cloudName,
+          apiKey,
+          folder: "colleferro/news",
+          sources: ["local", "url", "camera"],
+          multiple: false,
+          resourceType: "image",
+          clientAllowedFormats: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
+          maxFileSize: 5_000_000,
+          uploadSignature: async (
+            callback: (sig: string) => void,
+            paramsToSign: Record<string, unknown>,
+          ) => {
+            try {
+              const res = await fetch("/api/cloudinary/sign", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(paramsToSign),
+              });
+              if (!res.ok) throw new Error(`sign ${res.status}`);
+              const { signature } = await res.json();
+              callback(signature);
+            } catch (e) {
+              console.error("sign failed", e);
+            }
+          },
+        },
+        (err, result) => {
+          if (err) { console.error(err); resolve(null); return; }
+          if (result?.event === "success" && result.info?.secure_url) {
+            resolve(result.info.secure_url);
+          } else if (result?.event === "close") {
+            resolve(null);
+          }
+        },
+      );
+      widget.open();
+    });
+  }
 
   document.querySelectorAll<HTMLDivElement>(".rich-editor").forEach((root) => {
     const surface = root.querySelector<HTMLDivElement>(".rich-editor__surface");
@@ -86,11 +163,15 @@ const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
 
     const initialContent = textarea.value;
 
+    const cloudName = root.dataset.cloud ?? "";
+    const apiKey = root.dataset.apikey ?? "";
+
     const editor = new Editor({
       element: surface,
       extensions: [
         StarterKit.configure({ heading: { levels: [2, 3] } }),
         Link.configure({ openOnClick: false, autolink: true }),
+        Image.configure({ HTMLAttributes: { loading: "lazy" } }),
         Placeholder.configure({ placeholder }),
       ],
       content: initialContent || "",
@@ -151,6 +232,16 @@ const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
             break;
           }
           case "unlink": chain.unsetLink().run(); break;
+          case "image": {
+            if (!cloudName || !apiKey) {
+              window.alert("Cloudinary non configurato.");
+              return;
+            }
+            pickImageUrl(cloudName, apiKey).then((url) => {
+              if (url) editor.chain().focus().setImage({ src: url, alt: "" }).run();
+            });
+            break;
+          }
           case "undo": chain.undo().run(); break;
           case "redo": chain.redo().run(); break;
         }

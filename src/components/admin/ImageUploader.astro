@@ -1,0 +1,153 @@
+---
+interface Props {
+  name: string;
+  value?: string;
+  folder?: string;
+  label?: string;
+  hint?: string;
+}
+const { name, value = "", folder = "colleferro", label = "Immagine", hint } = Astro.props;
+const cloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
+const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
+const id = `img-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<div
+  class="image-uploader"
+  data-folder={folder}
+  data-input-id={id}
+  data-cloud={cloudName}
+  data-apikey={apiKey}
+>
+  <span class="font-display text-xs uppercase text-fumo block mb-2">{label}</span>
+  <div class="flex items-start gap-4">
+    <div class="preview w-28 h-28 bg-nero border border-carbone grid place-items-center overflow-hidden shrink-0">
+      {value ? (
+        <img src={value} alt="" class="w-full h-full object-cover" />
+      ) : (
+        <span class="text-fumo text-xs font-display">Nessuna</span>
+      )}
+    </div>
+    <div class="flex-1 space-y-2">
+      <div class="flex gap-2">
+        <button type="button" class="btn btn-ghost text-xs uploader-btn">Carica / cambia</button>
+        <button type="button" class="btn btn-ghost text-xs text-rosso uploader-clear">Rimuovi</button>
+      </div>
+      <p class="text-fumo text-xs">{hint ?? "jpg, png, webp · max 5MB"}</p>
+      <input
+        type="url"
+        name={name}
+        id={id}
+        value={value}
+        class="w-full bg-nero border border-carbone px-3 py-2 text-panna text-xs font-mono"
+        placeholder="https://res.cloudinary.com/..."
+      />
+    </div>
+  </div>
+</div>
+
+<script>
+  type CloudinaryResult = {
+    event: string;
+    info?: { secure_url?: string };
+  };
+  type WidgetHandle = { open(): void };
+  type CloudinaryGlobal = {
+    createUploadWidget(
+      options: Record<string, unknown>,
+      cb: (err: unknown, result: CloudinaryResult) => void,
+    ): WidgetHandle;
+  };
+
+  function loadWidget(): Promise<CloudinaryGlobal> {
+    return new Promise((resolve, reject) => {
+      const existing = (window as unknown as { cloudinary?: CloudinaryGlobal }).cloudinary;
+      if (existing) return resolve(existing);
+      const src = "https://upload-widget.cloudinary.com/global/all.js";
+      let s = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+      if (!s) {
+        s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        document.head.appendChild(s);
+      }
+      s.addEventListener("load", () => {
+        const cl = (window as unknown as { cloudinary?: CloudinaryGlobal }).cloudinary;
+        if (cl) resolve(cl);
+        else reject(new Error("Cloudinary widget not available"));
+      });
+      s.addEventListener("error", () => reject(new Error("Failed to load Cloudinary widget")));
+    });
+  }
+
+  async function openUploader(root: HTMLElement) {
+    const cloudName = root.dataset.cloud!;
+    const apiKey = root.dataset.apikey!;
+    const folder = root.dataset.folder ?? "colleferro";
+    const inputId = root.dataset.inputId!;
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    const preview = root.querySelector<HTMLDivElement>(".preview");
+
+    const cl = await loadWidget();
+
+    const widget = cl.createUploadWidget(
+      {
+        cloudName,
+        apiKey,
+        folder,
+        sources: ["local", "url", "camera"],
+        multiple: false,
+        resourceType: "image",
+        clientAllowedFormats: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
+        maxFileSize: 5_000_000,
+        uploadSignature: async (
+          callback: (sig: string) => void,
+          paramsToSign: Record<string, unknown>,
+        ) => {
+          try {
+            const res = await fetch("/api/cloudinary/sign", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(paramsToSign),
+            });
+            if (!res.ok) throw new Error(`sign ${res.status}`);
+            const { signature } = await res.json();
+            callback(signature);
+          } catch (e) {
+            console.error("Cloudinary sign failed", e);
+          }
+        },
+      },
+      (err, result) => {
+        if (err) {
+          console.error("Cloudinary error", err);
+          return;
+        }
+        if (result?.event === "success" && result.info?.secure_url && input && preview) {
+          const url = result.info.secure_url;
+          input.value = url;
+          preview.innerHTML = `<img src="${url}" alt="" class="w-full h-full object-cover" />`;
+        }
+      },
+    );
+
+    widget.open();
+  }
+
+  document.querySelectorAll<HTMLDivElement>(".image-uploader").forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>(".uploader-btn");
+    const clear = root.querySelector<HTMLButtonElement>(".uploader-clear");
+    btn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      openUploader(root).catch((err) => console.error(err));
+    });
+    clear?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const inputId = root.dataset.inputId!;
+      const input = document.getElementById(inputId) as HTMLInputElement | null;
+      if (input) input.value = "";
+      const preview = root.querySelector<HTMLDivElement>(".preview");
+      if (preview) preview.innerHTML = `<span class="text-fumo text-xs font-display">Nessuna</span>`;
+    });
+  });
+</script>

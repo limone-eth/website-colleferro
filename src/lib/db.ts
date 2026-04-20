@@ -57,6 +57,7 @@ export type Player = {
   role: "Portiere" | "Difensore" | "Centrocampista" | "Attaccante";
   dob?: string;
   nationality?: string;
+  photoUrl?: string;
 };
 
 export type StaffMember = {
@@ -73,6 +74,7 @@ export type Sponsor = {
   name: string;
   tier: "Main" | "Technical" | "Official" | "Local";
   url?: string;
+  logoUrl?: string;
 };
 
 export type Team = {
@@ -271,6 +273,7 @@ export async function getSquad(season: number): Promise<Player[]> {
     role: r.role as Player["role"],
     dob: (r.dob as string | null) ?? undefined,
     nationality: (r.nationality as string | null) ?? undefined,
+    photoUrl: (r.photo_url as string | null) ?? undefined,
   }));
 }
 
@@ -299,5 +302,6 @@ export async function getSponsors(season: number): Promise<Sponsor[]> {
     name: r.name as string,
     tier: r.tier as Sponsor["tier"],
     url: (r.url as string | null) ?? undefined,
+    logoUrl: (r.logo_url as string | null) ?? undefined,
   }));
 }
