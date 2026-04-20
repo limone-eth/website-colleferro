@@ -3,6 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import NewsCard from "@/components/NewsCard.astro";
 import { getNewsBySlug, getAllNews } from "@/lib/db";
 import { sanitizeArticleHtml } from "@/lib/sanitize";
+import { rewriteArticleImages } from "@/lib/cloudinary";
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect("/news");
@@ -43,7 +44,7 @@ const related = all.filter((n) => n.slug !== post.slug).slice(0, 3);
     </header>
 
     <div class="max-w-3xl mx-auto px-5 lg:px-8 py-16 md:py-20">
-      <div class="article-body text-lg leading-relaxed text-panna/90" set:html={sanitizeArticleHtml(post.body)} />
+      <div class="article-body text-lg leading-relaxed text-panna/90" set:html={rewriteArticleImages(sanitizeArticleHtml(post.body))} />
 
       <div class="mt-14 pt-8 border-t border-carbone flex items-center justify-between gap-4">
         <a href="/news" class="btn btn-ghost text-sm">

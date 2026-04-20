@@ -5,6 +5,8 @@ import { getSquad } from "@/lib/db";
 import { upsertPlayer, deletePlayer } from "@/lib/db-write";
 import { NATIONALITIES } from "@/lib/nationalities";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
+import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { CLD } from "@/lib/cloudinary";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -27,6 +29,7 @@ if (Astro.request.method === "POST") {
         role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
         dob: (f.get("dob") as string) || null,
         nationality: (f.get("nationality") as string) || null,
+        photoUrl: (f.get("photoUrl") as string) || null,
       });
     }
     return Astro.redirect("/admin/squad");
@@ -77,6 +80,9 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
       </select>
     </label>
     <div class="md:col-span-6">
+      <ImageUploader name="photoUrl" folder="colleferro/squad" label="Foto (opzionale)" />
+    </div>
+    <div class="md:col-span-6">
       <button type="submit" class="btn btn-primary">Aggiungi</button>
     </div>
   </form>
@@ -84,6 +90,7 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
   <table class="w-full text-sm">
     <thead class="border-b border-carbone">
       <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4"></th>
         <th class="py-3 pr-4">N.</th>
         <th class="py-3 pr-4">Nome</th>
         <th class="py-3 pr-4">Ruolo</th>
@@ -95,6 +102,13 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
     <tbody>
       {squad.map((p) => (
         <tr class="border-b border-carbone/60">
+          <td class="py-2 pr-4">
+            {p.photoUrl ? (
+              <img src={CLD.playerCard(p.photoUrl)} alt="" class="w-10 h-12 object-cover bg-carbone" loading="lazy" />
+            ) : (
+              <div class="w-10 h-12 bg-carbone border border-carbone" />
+            )}
+          </td>
           <td class="py-3 pr-4 font-display text-oro tabular-nums">{p.number}</td>
           <td class="py-3 pr-4 text-panna">{p.name}</td>
           <td class="py-3 pr-4 text-fumo">{p.role}</td>
