@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
-import { getAllMatches } from "@/lib/db";
+import { getAllMatches, getStandings } from "@/lib/db";
 import { deleteMatch } from "@/lib/db-write";
 
 const guard = requireAdmin(Astro);
@@ -13,11 +13,21 @@ if (Astro.request.method === "POST") {
   if (action === "delete") {
     const id = String(form.get("id") ?? "");
     if (id) await deleteMatch(id);
-    return Astro.redirect("/admin/matches");
+    return Astro.redirect(`/admin/matches${Astro.url.search}`);
   }
 }
 
-const matches = await getAllMatches();
+const filter = Astro.url.searchParams.get("team") ?? "Colleferro";
+const allMatches = await getAllMatches();
+const teams = [...new Set(allMatches.flatMap((m) => [m.home.name, m.away.name]))].sort();
+
+const matches = filter === "all"
+  ? allMatches
+  : allMatches.filter((m) => m.home.name === filter || m.away.name === filter);
+
+// compute Colleferro position for a quick summary banner
+const standings = await getStandings();
+const colPos = standings.find((s) => s.team === "Colleferro");
 ---
 
 <AdminLayout title="Partite" current="matches">
@@ -25,9 +35,27 @@ const matches = await getAllMatches();
     <div>
       <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Partite</p>
       <h1 class="font-display text-2xl text-panna">Calendario e risultati</h1>
+      {colPos && (
+        <p class="text-fumo text-xs mt-2">
+          Classifica derivata — Colleferro <span class="text-oro font-display">{colPos.pos}º</span> con <span class="text-oro font-display">{colPos.pts}</span> punti
+        </p>
+      )}
     </div>
     <a href="/admin/matches/new" class="btn btn-primary">Nuova partita</a>
   </div>
+
+  <form method="get" class="mb-6 flex gap-3 items-center">
+    <label class="flex items-center gap-2">
+      <span class="font-display text-xs tracking-wider uppercase text-fumo">Filtra squadra:</span>
+      <select name="team" class="bg-nero border border-carbone px-3 py-2 text-panna text-sm" onchange="this.form.submit()">
+        <option value="all" selected={filter === "all"}>Tutte ({allMatches.length})</option>
+        {teams.map((t) => (
+          <option value={t} selected={filter === t}>{t}</option>
+        ))}
+      </select>
+    </label>
+    <span class="text-xs text-fumo">{matches.length} partite mostrate</span>
+  </form>
 
   <div class="overflow-x-auto">
     <table class="w-full text-sm">

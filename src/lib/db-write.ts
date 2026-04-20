@@ -66,30 +66,6 @@ export async function deleteMatch(id: string) {
   await db.execute({ sql: "DELETE FROM matches WHERE id = ?", args: [id] });
 }
 
-export type StandingInput = {
-  pos: number;
-  team: string;
-  p: number;
-  w: number;
-  d: number;
-  l: number;
-  gf: number;
-  ga: number;
-  pts: number;
-  highlight: boolean;
-};
-
-export async function replaceStandings(rows: StandingInput[]) {
-  const stmts = [{ sql: "DELETE FROM standings", args: [] as unknown[] }];
-  for (const s of rows) {
-    stmts.push({
-      sql: `INSERT INTO standings (pos, team, played, wins, draws, losses, goals_for, goals_against, points, highlight) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      args: [s.pos, s.team, s.p, s.w, s.d, s.l, s.gf, s.ga, s.pts, s.highlight ? 1 : 0],
-    });
-  }
-  await db.batch(stmts, "write");
-}
-
 export type NewsInput = {
   slug: string;
   title: string;

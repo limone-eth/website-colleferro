@@ -93,34 +93,72 @@ export async function getAllMatches(): Promise<Match[]> {
   return rows.map(rowToMatch);
 }
 
+export async function getColleferroMatches(): Promise<Match[]> {
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM matches WHERE home_name = ? OR away_name = ? ORDER BY kickoff_ts ASC",
+    args: ["Colleferro", "Colleferro"],
+  });
+  return rows.map(rowToMatch);
+}
+
 export async function getNextMatch(): Promise<Match | null> {
-  const { rows } = await db.execute(
-    "SELECT * FROM matches WHERE status = 'upcoming' ORDER BY kickoff_ts ASC LIMIT 1",
-  );
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM matches WHERE status = 'upcoming' AND (home_name = ? OR away_name = ?) ORDER BY kickoff_ts ASC LIMIT 1",
+    args: ["Colleferro", "Colleferro"],
+  });
   return rows[0] ? rowToMatch(rows[0]) : null;
 }
 
 export async function getLastResults(limit = 3): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM matches WHERE status = 'finished' ORDER BY kickoff_ts DESC LIMIT ?",
-    args: [limit],
+    sql: "SELECT * FROM matches WHERE status = 'finished' AND (home_name = ? OR away_name = ?) ORDER BY kickoff_ts DESC LIMIT ?",
+    args: ["Colleferro", "Colleferro", limit],
   });
   return rows.map(rowToMatch);
 }
 
 export async function getStandings(): Promise<StandingRow[]> {
-  const { rows } = await db.execute("SELECT * FROM standings ORDER BY pos ASC");
-  return rows.map((r) => ({
-    pos: Number(r.pos),
-    team: r.team as string,
-    p: Number(r.played),
-    w: Number(r.wins),
-    d: Number(r.draws),
-    l: Number(r.losses),
-    gf: Number(r.goals_for),
-    ga: Number(r.goals_against),
-    pts: Number(r.points),
-    highlight: Number(r.highlight) === 1,
+  const { rows } = await db.execute(
+    `SELECT home_name, away_name, score_home, score_away, status FROM matches
+     WHERE status = 'finished' AND score_home IS NOT NULL AND score_away IS NOT NULL`,
+  );
+  type Stats = { team: string; p: number; w: number; d: number; l: number; gf: number; ga: number; pts: number };
+  const table = new Map<string, Stats>();
+  const touch = (name: string): Stats => {
+    let s = table.get(name);
+    if (!s) {
+      s = { team: name, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+      table.set(name, s);
+    }
+    return s;
+  };
+  for (const r of rows) {
+    const home = r.home_name as string;
+    const away = r.away_name as string;
+    const hg = Number(r.score_home);
+    const ag = Number(r.score_away);
+    const H = touch(home);
+    const A = touch(away);
+    H.p++; A.p++;
+    H.gf += hg; H.ga += ag;
+    A.gf += ag; A.ga += hg;
+    if (hg > ag) { H.w++; H.pts += 3; A.l++; }
+    else if (hg < ag) { A.w++; A.pts += 3; H.l++; }
+    else { H.d++; A.d++; H.pts++; A.pts++; }
+  }
+  const sorted = [...table.values()].sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    const gdA = a.gf - a.ga;
+    const gdB = b.gf - b.ga;
+    if (gdB !== gdA) return gdB - gdA;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.team.localeCompare(b.team);
+  });
+  return sorted.map((s, i) => ({
+    pos: i + 1,
+    team: s.team,
+    p: s.p, w: s.w, d: s.d, l: s.l, gf: s.gf, ga: s.ga, pts: s.pts,
+    highlight: s.team === "Colleferro",
   }));
 }
 

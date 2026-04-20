@@ -8,7 +8,6 @@ if (guard) return guard;
 
 const counts = await Promise.all([
   db.execute("SELECT COUNT(*) AS c FROM matches"),
-  db.execute("SELECT COUNT(*) AS c FROM standings"),
   db.execute("SELECT COUNT(*) AS c FROM news"),
   db.execute("SELECT COUNT(*) AS c FROM squad"),
   db.execute("SELECT COUNT(*) AS c FROM staff"),
@@ -16,12 +15,11 @@ const counts = await Promise.all([
 ]).then((rs) => rs.map((r) => Number((r.rows[0] as { c: number }).c)));
 
 const tiles = [
-  { href: "/admin/matches", label: "Partite", count: counts[0], hint: "Calendario, risultati, biglietti" },
-  { href: "/admin/standings", label: "Classifica", count: counts[1], hint: "Tabella Eccellenza B" },
-  { href: "/admin/news", label: "News", count: counts[2], hint: "Articoli e comunicati" },
-  { href: "/admin/squad", label: "Rosa", count: counts[3], hint: "Giocatori prima squadra" },
-  { href: "/admin/staff", label: "Staff", count: counts[4], hint: "Staff tecnico, medico, dirigenza" },
-  { href: "/admin/sponsors", label: "Sponsor", count: counts[5], hint: "Partner del club" },
+  { href: "/admin/matches", label: "Partite", count: counts[0], hint: "Classifica derivata dai risultati" },
+  { href: "/admin/news", label: "News", count: counts[1], hint: "Articoli e comunicati" },
+  { href: "/admin/squad", label: "Rosa", count: counts[2], hint: "Giocatori prima squadra" },
+  { href: "/admin/staff", label: "Staff", count: counts[3], hint: "Staff tecnico, medico, dirigenza" },
+  { href: "/admin/sponsors", label: "Sponsor", count: counts[4], hint: "Partner del club" },
 ];
 ---
 

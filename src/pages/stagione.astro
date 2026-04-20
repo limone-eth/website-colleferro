@@ -3,9 +3,9 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import StandingsTable from "@/components/StandingsTable.astro";
 import MatchCard from "@/components/MatchCard.astro";
-import { getAllMatches, getStandings } from "@/lib/db";
+import { getColleferroMatches, getStandings } from "@/lib/db";
 
-const [matches, standings] = await Promise.all([getAllMatches(), getStandings()]);
+const [matches, standings] = await Promise.all([getColleferroMatches(), getStandings()]);
 const finished = matches.filter((m) => m.status === "finished");
 const upcoming = matches.filter((m) => m.status === "upcoming");
 ---
