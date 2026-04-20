@@ -1,7 +1,7 @@
 import { createClient } from "@libsql/client";
 
-const url = import.meta.env.TURSO_DATABASE_URL ?? process.env.TURSO_DATABASE_URL;
-const authToken = import.meta.env.TURSO_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN;
+const url = (import.meta.env.TURSO_DATABASE_URL ?? process.env.TURSO_DATABASE_URL)?.trim();
+const authToken = (import.meta.env.TURSO_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN)?.trim();
 
 if (!url) throw new Error("TURSO_DATABASE_URL is not set");
 
