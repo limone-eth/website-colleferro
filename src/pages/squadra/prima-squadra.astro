@@ -2,7 +2,9 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import PlayerCard from "@/components/PlayerCard.astro";
-import { squad } from "@/data/squad";
+import { getSquad } from "@/lib/db";
+
+const squad = await getSquad();
 
 const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
 const byRole = Object.fromEntries(

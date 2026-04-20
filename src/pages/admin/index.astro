@@ -1,0 +1,46 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const counts = await Promise.all([
+  db.execute("SELECT COUNT(*) AS c FROM matches"),
+  db.execute("SELECT COUNT(*) AS c FROM standings"),
+  db.execute("SELECT COUNT(*) AS c FROM news"),
+  db.execute("SELECT COUNT(*) AS c FROM squad"),
+  db.execute("SELECT COUNT(*) AS c FROM staff"),
+  db.execute("SELECT COUNT(*) AS c FROM sponsors"),
+]).then((rs) => rs.map((r) => Number((r.rows[0] as { c: number }).c)));
+
+const tiles = [
+  { href: "/admin/matches", label: "Partite", count: counts[0], hint: "Calendario, risultati, biglietti" },
+  { href: "/admin/standings", label: "Classifica", count: counts[1], hint: "Tabella Eccellenza B" },
+  { href: "/admin/news", label: "News", count: counts[2], hint: "Articoli e comunicati" },
+  { href: "/admin/squad", label: "Rosa", count: counts[3], hint: "Giocatori prima squadra" },
+  { href: "/admin/staff", label: "Staff", count: counts[4], hint: "Staff tecnico, medico, dirigenza" },
+  { href: "/admin/sponsors", label: "Sponsor", count: counts[5], hint: "Partner del club" },
+];
+---
+
+<AdminLayout title="Dashboard" current="home">
+  <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-2">Dashboard</p>
+  <h1 class="font-display text-3xl text-panna mb-8">Gestione contenuti</h1>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {tiles.map((t) => (
+      <a
+        href={t.href}
+        class="bg-grafite border border-carbone hover:border-oro/60 p-6 transition-colors block"
+      >
+        <div class="flex items-baseline justify-between mb-2">
+          <span class="font-display text-lg text-panna">{t.label}</span>
+          <span class="font-display text-3xl font-bold text-oro tabular-nums">{t.count}</span>
+        </div>
+        <p class="text-fumo text-sm">{t.hint}</p>
+      </a>
+    ))}
+  </div>
+</AdminLayout>

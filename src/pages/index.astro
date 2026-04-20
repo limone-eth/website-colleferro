@@ -6,14 +6,27 @@ import MatchCard from "@/components/MatchCard.astro";
 import NewsCard from "@/components/NewsCard.astro";
 import StandingsTable from "@/components/StandingsTable.astro";
 import SponsorStrip from "@/components/SponsorStrip.astro";
-import { nextMatch, lastResults } from "@/data/matches";
-import { featuredNews, latestNews } from "@/data/news";
-import { standings } from "@/data/standings";
-import { sponsors } from "@/data/sponsors";
-import { withBase } from "@/lib/url";
+import {
+  getNextMatch,
+  getLastResults,
+  getAllNews,
+  getFeaturedNews,
+  getStandings,
+  getSponsors,
+} from "@/lib/db";
+
+const [nextMatch, lastResults, allNews, featuredNews, standings, sponsors] = await Promise.all([
+  getNextMatch(),
+  getLastResults(3),
+  getAllNews(),
+  getFeaturedNews(),
+  getStandings(),
+  getSponsors(),
+]);
 
 const topStandings = standings.slice(0, 8);
-const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0, 3);
+const latestNews = allNews.slice(0, 4);
+const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0, 3);
 ---
 
 <BaseLayout
@@ -44,17 +57,19 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
     />
     <div class="grid lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2">
-        <MatchCard
-          home={nextMatch.home}
-          away={nextMatch.away}
-          date={nextMatch.dateLong}
-          time={nextMatch.time}
-          venue={nextMatch.venue}
-          competition={nextMatch.competition}
-          matchday={nextMatch.matchday}
-          status="upcoming"
-          ticketUrl={nextMatch.ticketUrl}
-        />
+        {nextMatch && (
+          <MatchCard
+            home={nextMatch.home}
+            away={nextMatch.away}
+            date={nextMatch.dateLong}
+            time={nextMatch.time}
+            venue={nextMatch.venue}
+            competition={nextMatch.competition}
+            matchday={nextMatch.matchday}
+            status="upcoming"
+            ticketUrl={nextMatch.ticketUrl}
+          />
+        )}
       </div>
       <aside class="bg-grafite border border-carbone p-6 md:p-8">
         <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-4">
@@ -78,7 +93,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
             ))
           }
         </ul>
-        <a href={withBase("/stagione")} class="btn btn-ghost w-full justify-center mt-6 text-xs">
+        <a href="/stagione" class="btn btn-ghost w-full justify-center mt-6 text-xs">
           Vedi tutti i risultati
         </a>
       </aside>
@@ -107,7 +122,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
             <p class="text-fumo mt-3 text-sm leading-relaxed">
               A tre giornate dal termine, la corsa playoff passa per il “Caslini”. Ogni partita è una finale.
             </p>
-            <a href={withBase("/biglietteria")} class="btn btn-primary mt-5 w-full justify-center">
+            <a href="/biglietteria" class="btn btn-primary mt-5 w-full justify-center">
               Sostieni la squadra
             </a>
           </div>
@@ -125,14 +140,16 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
       ctaHref="/news"
     />
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <NewsCard
-        slug={featuredNews.slug}
-        title={featuredNews.title}
-        excerpt={featuredNews.excerpt}
-        date={featuredNews.date}
-        category={featuredNews.category}
-        featured={true}
-      />
+      {featuredNews && (
+        <NewsCard
+          slug={featuredNews.slug}
+          title={featuredNews.title}
+          excerpt={featuredNews.excerpt}
+          date={featuredNews.date}
+          category={featuredNews.category}
+          featured={true}
+        />
+      )}
       {
         sideNews.map((n) => (
           <NewsCard
@@ -175,7 +192,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
             <dd class="font-display text-2xl md:text-3xl font-bold text-panna mt-1">1952</dd>
           </div>
         </dl>
-        <a href={withBase("/stadio")} class="btn btn-ghost mt-8">
+        <a href="/stadio" class="btn btn-ghost mt-8">
           Scopri lo stadio
           <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="square" />
@@ -218,7 +235,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0,
           Un posto al “Caslini” è un posto in famiglia.
         </h2>
       </div>
-      <a href={withBase("/biglietteria")} class="btn btn-oro text-base">
+      <a href="/biglietteria" class="btn btn-oro text-base">
         Richiedi l'abbonamento
         <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="square" />

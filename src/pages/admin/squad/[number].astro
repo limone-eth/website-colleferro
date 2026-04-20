@@ -1,0 +1,70 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { upsertPlayer } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { number } = Astro.params;
+if (!number) return Astro.redirect("/admin/squad");
+const num = Number(number);
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    await upsertPlayer({
+      number: Number(f.get("number")),
+      name: String(f.get("name") ?? "").trim(),
+      role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
+      dob: (f.get("dob") as string) || null,
+      nationality: (f.get("nationality") as string) || null,
+    }, num);
+    return Astro.redirect("/admin/squad");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const { rows } = await db.execute({ sql: "SELECT * FROM squad WHERE number = ?", args: [num] });
+if (!rows[0]) return new Response("Giocatore non trovato", { status: 404 });
+const r = rows[0];
+const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
+---
+
+<AdminLayout title="Modifica giocatore" current="squad">
+  <h1 class="font-display text-2xl text-panna mb-6">Modifica giocatore #{r.number}</h1>
+
+  <form method="post" class="bg-grafite border border-carbone p-6 grid md:grid-cols-6 gap-4 items-end">
+    {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2 md:col-span-6">{error}</p>}
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">N.</span>
+      <input type="number" name="number" required min="1" max="99" value={r.number as number} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Nome</span>
+      <input name="name" required value={r.name as string} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Ruolo</span>
+      <select name="role" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        {roles.map((role) => <option value={role} selected={r.role === role}>{role}</option>)}
+      </select>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Anno</span>
+      <input name="dob" value={(r.dob as string | null) ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Naz.</span>
+      <input name="nationality" maxlength="3" value={(r.nationality as string | null) ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
+    </label>
+    <div class="md:col-span-6 flex gap-3 pt-2">
+      <button type="submit" class="btn btn-primary">Salva</button>
+      <a href="/admin/squad" class="btn btn-ghost">Annulla</a>
+    </div>
+  </form>
+</AdminLayout>

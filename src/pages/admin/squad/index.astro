@@ -1,0 +1,105 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getSquad } from "@/lib/db";
+import { upsertPlayer, deletePlayer } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deletePlayer(Number(f.get("number")));
+    } else if (action === "create") {
+      await upsertPlayer({
+        number: Number(f.get("number")),
+        name: String(f.get("name") ?? "").trim(),
+        role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
+        dob: (f.get("dob") as string) || null,
+        nationality: (f.get("nationality") as string) || null,
+      });
+    }
+    return Astro.redirect("/admin/squad");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const squad = await getSquad();
+const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
+---
+
+<AdminLayout title="Rosa" current="squad">
+  <div class="mb-6 border-b border-carbone pb-4">
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Rosa</p>
+    <h1 class="font-display text-2xl text-panna">Prima squadra</h1>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-5 grid md:grid-cols-6 gap-3 items-end mb-8">
+    <input type="hidden" name="action" value="create" />
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">N.</span>
+      <input type="number" name="number" required min="1" max="99" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Nome</span>
+      <input name="name" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Ruolo</span>
+      <select name="role" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        {roles.map((r) => <option value={r}>{r}</option>)}
+      </select>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Anno</span>
+      <input name="dob" placeholder="2001" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Naz.</span>
+      <input name="nationality" maxlength="3" placeholder="ITA" class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
+    </label>
+    <div class="md:col-span-6">
+      <button type="submit" class="btn btn-primary">Aggiungi</button>
+    </div>
+  </form>
+
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4">N.</th>
+        <th class="py-3 pr-4">Nome</th>
+        <th class="py-3 pr-4">Ruolo</th>
+        <th class="py-3 pr-4">Anno</th>
+        <th class="py-3 pr-4">Naz.</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {squad.map((p) => (
+        <tr class="border-b border-carbone/60">
+          <td class="py-3 pr-4 font-display text-oro tabular-nums">{p.number}</td>
+          <td class="py-3 pr-4 text-panna">{p.name}</td>
+          <td class="py-3 pr-4 text-fumo">{p.role}</td>
+          <td class="py-3 pr-4 text-fumo">{p.dob ?? "—"}</td>
+          <td class="py-3 pr-4 text-fumo">{p.nationality ?? "—"}</td>
+          <td class="py-3 flex gap-2 justify-end">
+            <a href={`/admin/squad/${p.number}`} class="btn btn-ghost text-xs">Modifica</a>
+            <form method="post" onsubmit="return confirm('Eliminare questo giocatore?')">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="number" value={p.number} />
+              <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+            </form>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>

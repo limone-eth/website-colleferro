@@ -1,0 +1,101 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getStandings } from "@/lib/db";
+import { replaceStandings } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+let error: string | undefined;
+let success = false;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const count = Number(f.get("count") ?? 0);
+  const rows = [];
+  for (let i = 0; i < count; i++) {
+    const team = String(f.get(`team_${i}`) ?? "").trim();
+    if (!team) continue;
+    rows.push({
+      pos: Number(f.get(`pos_${i}`) ?? i + 1),
+      team,
+      p: Number(f.get(`p_${i}`) ?? 0),
+      w: Number(f.get(`w_${i}`) ?? 0),
+      d: Number(f.get(`d_${i}`) ?? 0),
+      l: Number(f.get(`l_${i}`) ?? 0),
+      gf: Number(f.get(`gf_${i}`) ?? 0),
+      ga: Number(f.get(`ga_${i}`) ?? 0),
+      pts: Number(f.get(`pts_${i}`) ?? 0),
+      highlight: f.get(`highlight_${i}`) === "1",
+    });
+  }
+  try {
+    await replaceStandings(rows);
+    success = true;
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const standings = await getStandings();
+const rows = standings.length > 0 ? standings : Array.from({ length: 16 }, (_, i) => ({
+  pos: i + 1, team: "", p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, highlight: false,
+}));
+---
+
+<AdminLayout title="Classifica" current="standings">
+  <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Classifica</p>
+      <h1 class="font-display text-2xl text-panna">Eccellenza Lazio — Girone B</h1>
+    </div>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+  {success && <p class="mb-4 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">Classifica aggiornata.</p>}
+
+  <form method="post">
+    <input type="hidden" name="count" value={rows.length} />
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="border-b border-carbone">
+          <tr class="text-fumo font-display text-xs tracking-wider uppercase">
+            <th class="py-2 pr-2 text-left">#</th>
+            <th class="py-2 pr-2 text-left">Squadra</th>
+            <th class="py-2 px-1">G</th>
+            <th class="py-2 px-1">V</th>
+            <th class="py-2 px-1">N</th>
+            <th class="py-2 px-1">P</th>
+            <th class="py-2 px-1">GF</th>
+            <th class="py-2 px-1">GS</th>
+            <th class="py-2 px-1">Pt</th>
+            <th class="py-2 px-1">CLF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr class="border-b border-carbone/60">
+              <td class="py-1 pr-2"><input type="number" name={`pos_${i}`} value={r.pos} class="w-12 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 pr-2"><input type="text" name={`team_${i}`} value={r.team} class="w-full min-w-[12rem] bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`p_${i}`} value={r.p} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`w_${i}`} value={r.w} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`d_${i}`} value={r.d} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`l_${i}`} value={r.l} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`gf_${i}`} value={r.gf} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`ga_${i}`} value={r.ga} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna" /></td>
+              <td class="py-1 px-1"><input type="number" name={`pts_${i}`} value={r.pts} class="w-14 bg-nero border border-carbone px-2 py-1 text-panna font-bold" /></td>
+              <td class="py-1 px-1 text-center">
+                <input type="checkbox" name={`highlight_${i}`} value="1" checked={r.highlight} class="accent-oro" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-fumo text-xs mt-4">Lascia il nome squadra vuoto per ignorare una riga. Flag "CLF" evidenzia la riga del Colleferro.</p>
+    <div class="flex gap-3 mt-6">
+      <button type="submit" class="btn btn-primary">Salva classifica</button>
+    </div>
+  </form>
+</AdminLayout>

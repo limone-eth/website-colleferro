@@ -1,0 +1,54 @@
+---
+import "@/styles/global.css";
+import { verifyPassword, issueSession, isAuthenticated } from "@/lib/auth";
+
+if (isAuthenticated(Astro.cookies)) {
+  return Astro.redirect("/admin");
+}
+
+let error: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const password = String(formData.get("password") ?? "");
+  if (verifyPassword(password)) {
+    issueSession(Astro.cookies);
+    return Astro.redirect("/admin");
+  }
+  error = "Password non valida";
+}
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Accesso Admin — Colleferro</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-nero text-panna font-sans antialiased min-h-screen grid place-items-center px-5">
+    <form method="post" class="w-full max-w-sm bg-grafite border border-carbone p-8">
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-2">Area riservata</p>
+      <h1 class="font-display text-2xl text-panna mb-6">Accesso admin</h1>
+      {error && (
+        <p class="text-sm text-rosso mb-4 border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>
+      )}
+      <label class="block mb-4">
+        <span class="font-display text-xs tracking-wider uppercase text-fumo block mb-2">Password</span>
+        <input
+          type="password"
+          name="password"
+          required
+          autofocus
+          class="w-full bg-nero border border-carbone px-3 py-2.5 text-panna focus:border-oro outline-none"
+        />
+      </label>
+      <button type="submit" class="btn btn-primary w-full justify-center">Entra</button>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,68 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import MatchForm from "@/components/admin/MatchForm.astro";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+import type { Match } from "@/lib/db";
+import { upsertMatch } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/matches");
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    await upsertMatch({
+      id: String(f.get("id") ?? ""),
+      matchday: String(f.get("matchday") ?? ""),
+      competition: String(f.get("competition") ?? ""),
+      date: String(f.get("date") ?? ""),
+      dateLong: String(f.get("dateLong") ?? ""),
+      time: String(f.get("time") ?? ""),
+      homeName: String(f.get("homeName") ?? ""),
+      homeShort: String(f.get("homeShort") ?? "").toUpperCase(),
+      awayName: String(f.get("awayName") ?? ""),
+      awayShort: String(f.get("awayShort") ?? "").toUpperCase(),
+      venue: String(f.get("venue") ?? ""),
+      status: String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished",
+      scoreHome: f.get("scoreHome") ? Number(f.get("scoreHome")) : null,
+      scoreAway: f.get("scoreAway") ? Number(f.get("scoreAway")) : null,
+      ticketUrl: (f.get("ticketUrl") as string) || null,
+    }, id);
+    return Astro.redirect("/admin/matches");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const { rows } = await db.execute({ sql: "SELECT * FROM matches WHERE id = ?", args: [id] });
+if (!rows[0]) return new Response("Partita non trovata", { status: 404 });
+const r = rows[0];
+const match: Match = {
+  id: r.id as string,
+  matchday: r.matchday as string,
+  competition: r.competition as string,
+  date: r.date as string,
+  dateLong: r.date_long as string,
+  time: r.time as string,
+  home: { name: r.home_name as string, short: r.home_short as string },
+  away: { name: r.away_name as string, short: r.away_short as string },
+  venue: r.venue as string,
+  status: r.status as Match["status"],
+  score: r.score_home != null && r.score_away != null
+    ? { home: Number(r.score_home), away: Number(r.score_away) }
+    : undefined,
+  ticketUrl: (r.ticket_url as string | null) ?? undefined,
+  kickoffTs: Number(r.kickoff_ts),
+};
+---
+
+<AdminLayout title="Modifica partita" current="matches">
+  <h1 class="font-display text-2xl text-panna mb-6">Modifica partita</h1>
+  <MatchForm action={`/admin/matches/${id}`} match={match} error={error} />
+</AdminLayout>

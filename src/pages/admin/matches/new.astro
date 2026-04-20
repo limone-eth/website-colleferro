@@ -1,0 +1,42 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import MatchForm from "@/components/admin/MatchForm.astro";
+import { requireAdmin } from "@/lib/auth";
+import { upsertMatch } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    await upsertMatch({
+      id: String(f.get("id") ?? ""),
+      matchday: String(f.get("matchday") ?? ""),
+      competition: String(f.get("competition") ?? ""),
+      date: String(f.get("date") ?? ""),
+      dateLong: String(f.get("dateLong") ?? ""),
+      time: String(f.get("time") ?? ""),
+      homeName: String(f.get("homeName") ?? ""),
+      homeShort: String(f.get("homeShort") ?? "").toUpperCase(),
+      awayName: String(f.get("awayName") ?? ""),
+      awayShort: String(f.get("awayShort") ?? "").toUpperCase(),
+      venue: String(f.get("venue") ?? ""),
+      status: String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished",
+      scoreHome: f.get("scoreHome") ? Number(f.get("scoreHome")) : null,
+      scoreAway: f.get("scoreAway") ? Number(f.get("scoreAway")) : null,
+      ticketUrl: (f.get("ticketUrl") as string) || null,
+    });
+    return Astro.redirect("/admin/matches");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+---
+
+<AdminLayout title="Nuova partita" current="matches">
+  <h1 class="font-display text-2xl text-panna mb-6">Nuova partita</h1>
+  <MatchForm action="/admin/matches/new" error={error} />
+</AdminLayout>

@@ -1,0 +1,44 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import NewsForm from "@/components/admin/NewsForm.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getNewsBySlug } from "@/lib/db";
+import { upsertNews } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect("/admin/news");
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    const body = String(f.get("body") ?? "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    await upsertNews({
+      slug: String(f.get("slug") ?? "").trim(),
+      title: String(f.get("title") ?? ""),
+      excerpt: String(f.get("excerpt") ?? ""),
+      date: String(f.get("date") ?? ""),
+      dateIso: String(f.get("dateIso") ?? ""),
+      category: String(f.get("category") ?? ""),
+      author: String(f.get("author") ?? ""),
+      body,
+      featured: f.get("featured") === "1",
+    }, slug);
+    return Astro.redirect("/admin/news");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const post = await getNewsBySlug(slug);
+if (!post) return new Response("Articolo non trovato", { status: 404 });
+---
+
+<AdminLayout title="Modifica articolo" current="news">
+  <h1 class="font-display text-2xl text-panna mb-6">Modifica articolo</h1>
+  <NewsForm action={`/admin/news/${slug}`} post={post} error={error} />
+</AdminLayout>

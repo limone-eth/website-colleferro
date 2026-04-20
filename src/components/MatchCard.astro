@@ -1,5 +1,4 @@
 ---
-import { withBase } from "@/lib/url";
 interface Team {
   name: string;
   short: string;
@@ -91,7 +90,7 @@ const {
         {venue}
       </p>
       {ticketUrl && status === "upcoming" && (
-        <a href={ticketUrl.startsWith("/") ? withBase(ticketUrl) : ticketUrl} class="btn btn-oro text-sm">
+        <a href={ticketUrl} class="btn btn-oro text-sm">
           Acquista biglietti
         </a>
       )}

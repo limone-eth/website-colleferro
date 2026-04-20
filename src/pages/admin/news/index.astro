@@ -1,0 +1,64 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getAllNews } from "@/lib/db";
+import { deleteNews } from "@/lib/db-write";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  if (f.get("action") === "delete") {
+    const slug = String(f.get("slug") ?? "");
+    if (slug) await deleteNews(slug);
+    return Astro.redirect("/admin/news");
+  }
+}
+
+const news = await getAllNews();
+---
+
+<AdminLayout title="News" current="news">
+  <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">News</p>
+      <h1 class="font-display text-2xl text-panna">Articoli e comunicati</h1>
+    </div>
+    <a href="/admin/news/new" class="btn btn-primary">Nuovo articolo</a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="border-b border-carbone">
+        <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+          <th class="py-3 pr-4">Data</th>
+          <th class="py-3 pr-4">Categoria</th>
+          <th class="py-3 pr-4">Titolo</th>
+          <th class="py-3 pr-4">Featured</th>
+          <th class="py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {news.map((n) => (
+          <tr class="border-b border-carbone/60">
+            <td class="py-3 pr-4 text-fumo text-xs">{n.date}</td>
+            <td class="py-3 pr-4">
+              <span class="font-display text-[0.65rem] tracking-wider uppercase bg-rosso/20 text-rosso px-2 py-1">{n.category}</span>
+            </td>
+            <td class="py-3 pr-4 text-panna">{n.title}</td>
+            <td class="py-3 pr-4 text-oro">{n.featured ? "★" : ""}</td>
+            <td class="py-3 flex gap-2 justify-end">
+              <a href={`/admin/news/${n.slug}`} class="btn btn-ghost text-xs">Modifica</a>
+              <form method="post" onsubmit="return confirm('Eliminare questo articolo?')">
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="slug" value={n.slug} />
+                <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</AdminLayout>

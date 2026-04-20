@@ -1,0 +1,61 @@
+---
+import "@/styles/global.css";
+
+interface Props {
+  title: string;
+  current?: string;
+}
+const { title, current } = Astro.props;
+
+const nav = [
+  { href: "/admin", label: "Dashboard", key: "home" },
+  { href: "/admin/matches", label: "Partite", key: "matches" },
+  { href: "/admin/standings", label: "Classifica", key: "standings" },
+  { href: "/admin/news", label: "News", key: "news" },
+  { href: "/admin/squad", label: "Rosa", key: "squad" },
+  { href: "/admin/staff", label: "Staff", key: "staff" },
+  { href: "/admin/sponsors", label: "Sponsor", key: "sponsors" },
+];
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Admin Colleferro</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-nero text-panna font-sans antialiased min-h-screen">
+    <header class="border-b border-carbone bg-grafite">
+      <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-6">
+        <a href="/admin" class="font-display text-panna tracking-wide">
+          <span class="text-[0.65rem] tracking-[0.2em] text-fumo uppercase block">Admin</span>
+          <span class="text-lg">Colleferro Calcio</span>
+        </a>
+        <nav class="hidden md:flex items-center gap-1 flex-1 justify-center">
+          {nav.map((n) => (
+            <a
+              href={n.href}
+              class={`px-3 py-2 font-display text-xs tracking-wider uppercase transition-colors ${
+                current === n.key ? "text-oro" : "text-panna hover:text-oro"
+              }`}
+            >
+              {n.label}
+            </a>
+          ))}
+        </nav>
+        <form method="post" action="/admin/logout">
+          <button type="submit" class="btn btn-ghost text-xs">Esci</button>
+        </form>
+      </div>
+    </header>
+    <main class="max-w-6xl mx-auto px-5 py-10">
+      <slot />
+    </main>
+  </body>
+</html>

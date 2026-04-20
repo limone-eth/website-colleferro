@@ -1,0 +1,63 @@
+---
+import type { NewsPost } from "@/lib/db";
+interface Props {
+  action: string;
+  post?: NewsPost;
+  error?: string;
+}
+const { action, post, error } = Astro.props;
+const bodyText = post?.body.join("\n\n") ?? "";
+const categories = ["Prima Squadra", "Società", "Biglietteria", "Giovanili", "Partner"];
+---
+
+<form method="post" action={action} class="space-y-5 bg-grafite border border-carbone p-6">
+  {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Slug (url-friendly)</span>
+      <input name="slug" required value={post?.slug ?? ""} placeholder="vittoria-casalinga-aranova" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Titolo</span>
+      <input name="title" required value={post?.title ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Sommario (2-3 righe)</span>
+      <textarea name="excerpt" required rows="2" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">{post?.excerpt ?? ""}</textarea>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Data (es. 14 Apr 2026)</span>
+      <input name="date" required value={post?.date ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Data ISO (YYYY-MM-DD)</span>
+      <input name="dateIso" required value={post?.dateIso ?? ""} pattern="\d{4}-\d{2}-\d{2}" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Categoria</span>
+      <select name="category" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        {categories.map((c) => (
+          <option value={c} selected={post?.category === c}>{c}</option>
+        ))}
+      </select>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Autore</span>
+      <input name="author" required value={post?.author ?? "Redazione"} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Corpo articolo (una riga vuota separa i paragrafi)</span>
+      <textarea name="body" required rows="10" class="w-full bg-nero border border-carbone px-3 py-2 text-panna font-mono text-sm">{bodyText}</textarea>
+    </label>
+    <label class="flex items-center gap-3 md:col-span-2">
+      <input type="checkbox" name="featured" value="1" checked={post?.featured} class="accent-oro" />
+      <span class="font-display text-xs uppercase text-fumo">In evidenza in home</span>
+    </label>
+  </div>
+
+  <div class="flex gap-3 pt-2">
+    <button type="submit" class="btn btn-primary">Salva</button>
+    <a href="/admin/news" class="btn btn-ghost">Annulla</a>
+  </div>
+</form>
