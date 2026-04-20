@@ -20,11 +20,7 @@ const teamOptions = teams.slice().sort((a, b) => (a === "Colleferro" ? -1 : b ==
 <form method="post" action={action} class="space-y-5 bg-grafite border border-carbone p-6">
   {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
 
-  <div class="grid md:grid-cols-3 gap-4">
-    <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">ID partita</span>
-      <input name="id" required value={match?.id ?? ""} placeholder="m-30" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
+  <div class="grid md:grid-cols-2 gap-4">
     <label class="block">
       <span class="font-display text-xs uppercase text-fumo block mb-2">Giornata (numero)</span>
       <input

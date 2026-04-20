@@ -30,8 +30,10 @@ if (Astro.request.method === "POST") {
 
     const fields = dateFieldsFromInput(String(f.get("matchDate") ?? ""), String(f.get("matchTime") ?? "15:00"));
 
+    const id = `m-${crypto.randomUUID().slice(0, 8)}`;
+
     await upsertMatch({
-      id: String(f.get("id") ?? "").trim(),
+      id,
       matchday: matchdayLabel(matchdayNum),
       competition: String(f.get("competition") ?? ""),
       date: fields.date,
