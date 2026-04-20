@@ -1,0 +1,228 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import MatchCard from "@/components/MatchCard.astro";
+import NewsCard from "@/components/NewsCard.astro";
+import StandingsTable from "@/components/StandingsTable.astro";
+import SponsorStrip from "@/components/SponsorStrip.astro";
+import { nextMatch, lastResults } from "@/data/matches";
+import { featuredNews, latestNews } from "@/data/news";
+import { standings } from "@/data/standings";
+import { sponsors } from "@/data/sponsors";
+
+const topStandings = standings.slice(0, 8);
+const sideNews = latestNews.filter((n) => n.slug !== featuredNews.slug).slice(0, 3);
+---
+
+<BaseLayout
+  title="A.S.D. Colleferro Calcio — Sito Ufficiale"
+  description="Casa del Colleferro Calcio. Segui prima squadra, calendario Eccellenza Lazio, news e biglietti per lo Stadio Caslini."
+>
+  <Hero
+    eyebrow="Stagione 2025/26 · Eccellenza Lazio"
+    title="Orgoglio rossonero. Cuore di Colleferro."
+    subtitle="Dal 1925 la squadra della Valle del Sacco. Vivi ogni partita al “Caslini”, dal primo fischio all'ultimo applauso."
+    primaryCta={{ label: "Biglietti prossima partita", href: "/biglietteria" }}
+    secondaryCta={{ label: "Scopri la squadra", href: "/squadra/prima-squadra" }}
+    variant="home"
+  >
+    <span slot="title">
+      Orgoglio rossonero.<br />
+      <span class="text-rosso">Cuore</span> di Colleferro.
+    </span>
+  </Hero>
+
+  <!-- Prossima partita + ultimi risultati -->
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <SectionHeader
+      eyebrow="Prossimo impegno"
+      title="Si gioca al Caslini"
+      ctaLabel="Calendario completo"
+      ctaHref="/stagione"
+    />
+    <div class="grid lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <MatchCard
+          home={nextMatch.home}
+          away={nextMatch.away}
+          date={nextMatch.dateLong}
+          time={nextMatch.time}
+          venue={nextMatch.venue}
+          competition={nextMatch.competition}
+          matchday={nextMatch.matchday}
+          status="upcoming"
+          ticketUrl={nextMatch.ticketUrl}
+        />
+      </div>
+      <aside class="bg-grafite border border-carbone p-6 md:p-8">
+        <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-4">
+          Ultimi risultati
+        </p>
+        <ul class="space-y-4">
+          {
+            lastResults.map((m) => (
+              <li class="pb-4 border-b border-carbone last:border-b-0 last:pb-0">
+                <p class="text-[0.7rem] font-display tracking-[0.2em] uppercase text-fumo mb-1">
+                  {m.matchday}
+                </p>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="text-panna text-sm truncate">{m.home.name}</span>
+                  <span class="font-display font-bold text-oro tabular-nums text-lg">
+                    {m.score!.home}–{m.score!.away}
+                  </span>
+                  <span class="text-panna text-sm truncate text-right">{m.away.name}</span>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <a href="/stagione" class="btn btn-ghost w-full justify-center mt-6 text-xs">
+          Vedi tutti i risultati
+        </a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Classifica -->
+  <section class="bg-grafite/40 border-y border-carbone py-20 md:py-24">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+      <SectionHeader
+        eyebrow="Classifica"
+        title="Eccellenza Lazio — Girone B"
+        ctaLabel="Classifica completa"
+        ctaHref="/stagione"
+      />
+      <div class="grid lg:grid-cols-3 gap-8 items-start">
+        <div class="lg:col-span-2">
+          <StandingsTable rows={topStandings} />
+        </div>
+        <aside>
+          <div class="bg-nero border border-rosso/40 p-6">
+            <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-2">
+              Posizione attuale
+            </p>
+            <p class="font-display text-6xl md:text-7xl font-bold text-panna leading-none">4°</p>
+            <p class="text-fumo mt-3 text-sm leading-relaxed">
+              A tre giornate dal termine, la corsa playoff passa per il “Caslini”. Ogni partita è una finale.
+            </p>
+            <a href="/biglietteria" class="btn btn-primary mt-5 w-full justify-center">
+              Sostieni la squadra
+            </a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <SectionHeader
+      eyebrow="Ultime news"
+      title="La voce del club"
+      ctaLabel="Archivio news"
+      ctaHref="/news"
+    />
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <NewsCard
+        slug={featuredNews.slug}
+        title={featuredNews.title}
+        excerpt={featuredNews.excerpt}
+        date={featuredNews.date}
+        category={featuredNews.category}
+        featured={true}
+      />
+      {
+        sideNews.map((n) => (
+          <NewsCard
+            slug={n.slug}
+            title={n.title}
+            excerpt={n.excerpt}
+            date={n.date}
+            category={n.category}
+          />
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Il nostro stadio -->
+  <section class="relative bg-nero border-y border-carbone overflow-hidden">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_bottom_left,_var(--color-rosso)_0%,_transparent_60%)]"></div>
+    <div class="relative max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-28 grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-4">
+          Lo Stadio
+        </p>
+        <h2 class="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-panna leading-tight">
+          Il “Caslini”,<br />la nostra casa.
+        </h2>
+        <p class="text-fumo mt-6 text-lg leading-relaxed max-w-lg">
+          Inaugurato negli anni '50, ristrutturato e riportato a nuova vita dalla società e dal Comune. Qui battono 90 minuti di Colleferro, ogni domenica.
+        </p>
+        <dl class="mt-8 grid grid-cols-3 gap-4">
+          <div class="border-l-2 border-rosso pl-3">
+            <dt class="text-[0.65rem] font-display tracking-[0.2em] uppercase text-fumo">Capienza</dt>
+            <dd class="font-display text-2xl md:text-3xl font-bold text-panna mt-1">3.500</dd>
+          </div>
+          <div class="border-l-2 border-rosso pl-3">
+            <dt class="text-[0.65rem] font-display tracking-[0.2em] uppercase text-fumo">Superficie</dt>
+            <dd class="font-display text-2xl md:text-3xl font-bold text-panna mt-1">Erba</dd>
+          </div>
+          <div class="border-l-2 border-rosso pl-3">
+            <dt class="text-[0.65rem] font-display tracking-[0.2em] uppercase text-fumo">Anno</dt>
+            <dd class="font-display text-2xl md:text-3xl font-bold text-panna mt-1">1952</dd>
+          </div>
+        </dl>
+        <a href="/stadio" class="btn btn-ghost mt-8">
+          Scopri lo stadio
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="square" />
+          </svg>
+        </a>
+      </div>
+      <div class="aspect-[4/3] bg-gradient-to-br from-rosso-deep via-carbone to-nero border border-carbone grid place-items-center">
+        <svg viewBox="0 0 200 140" class="w-full h-full p-6" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <rect x="10" y="10" width="180" height="120" class="stroke-panna/20" />
+          <line x1="100" y1="10" x2="100" y2="130" class="stroke-panna/20" />
+          <circle cx="100" cy="70" r="18" class="stroke-panna/20" />
+          <rect x="10" y="45" width="30" height="50" class="stroke-panna/20" />
+          <rect x="160" y="45" width="30" height="50" class="stroke-panna/20" />
+          <rect x="10" y="60" width="10" height="20" class="stroke-oro" />
+          <rect x="180" y="60" width="10" height="20" class="stroke-oro" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sponsor -->
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <SectionHeader
+      eyebrow="I nostri partner"
+      title="Al fianco del Colleferro"
+      ctaLabel="Diventa sponsor"
+      ctaHref="/sponsor"
+    />
+    <SponsorStrip sponsors={sponsors} />
+  </section>
+
+  <!-- CTA finale -->
+  <section class="bg-rosso text-panna">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8 py-14 md:py-16 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div>
+        <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-2">
+          Abbonamento 2025/26
+        </p>
+        <h2 class="font-display text-3xl md:text-4xl font-bold leading-tight">
+          Un posto al “Caslini” è un posto in famiglia.
+        </h2>
+      </div>
+      <a href="/biglietteria" class="btn btn-oro text-base">
+        Richiedi l'abbonamento
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="square" />
+        </svg>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

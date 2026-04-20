@@ -1,0 +1,91 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+
+const tappe = [
+  {
+    year: "1925",
+    title: "Nasce il Colleferro",
+    text: "Un gruppo di operai della fabbrica dà vita alla prima squadra della città. Colori: rosso e nero, come il carbone e le scintille delle acciaierie.",
+  },
+  {
+    year: "1952",
+    title: "Inaugurazione del “Caslini”",
+    text: "Apre lo stadio comunale. Diventa da subito il simbolo sportivo della Valle del Sacco.",
+  },
+  {
+    year: "1978",
+    title: "Storica promozione in Serie D",
+    text: "La prima grande impresa sportiva: il Colleferro tra le squadre semiprofessionistiche italiane.",
+  },
+  {
+    year: "1995",
+    title: "Anni duri, rinascita dal basso",
+    text: "Dopo una fase difficile, la società riparte dai dilettanti. Rimane forte il legame con il territorio.",
+  },
+  {
+    year: "2012",
+    title: "Rifondazione e nuovo progetto",
+    text: "Nasce la A.S.D. Colleferro Calcio, con un piano chiaro: giovani del territorio, lavoro sul campo, identità rossonera.",
+  },
+  {
+    year: "2024",
+    title: "Ritorno in Eccellenza",
+    text: "Dopo anni di gavetta, il Colleferro torna nel massimo campionato regionale. Una festa per tutta la città.",
+  },
+];
+---
+
+<BaseLayout
+  title="Storia — Colleferro Calcio"
+  description="Un secolo di calcio rossonero a Colleferro. Dalla fondazione del 1925 al ritorno in Eccellenza."
+>
+  <Hero
+    eyebrow="Il Club"
+    title="Un secolo, una maglia, una città."
+    subtitle="La storia del Colleferro è la storia di chi non ha mai mollato. Operai, ragazzi del paese, famiglie e tifosi: un filo rosso e nero che non si è mai spezzato."
+  />
+
+  <section class="max-w-5xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <div class="grid md:grid-cols-3 gap-6 mb-16">
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl md:text-6xl font-bold text-oro">100</p>
+        <p class="text-fumo mt-2 text-sm">anni di storia rossonera</p>
+      </div>
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl md:text-6xl font-bold text-oro">1925</p>
+        <p class="text-fumo mt-2 text-sm">l'anno della fondazione</p>
+      </div>
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl md:text-6xl font-bold text-oro">1</p>
+        <p class="text-fumo mt-2 text-sm">sola maglia, quella della città</p>
+      </div>
+    </div>
+
+    <ol class="relative border-l-2 border-rosso/40 ml-4 space-y-12">
+      {
+        tappe.map((t) => (
+          <li class="relative pl-10">
+            <span class="absolute -left-[11px] top-1 w-5 h-5 bg-rosso border-4 border-nero"></span>
+            <p class="font-display text-xs tracking-[0.25em] uppercase text-oro">{t.year}</p>
+            <h3 class="font-display text-2xl md:text-3xl text-panna mt-1">{t.title}</h3>
+            <p class="text-fumo mt-3 leading-relaxed max-w-2xl">{t.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section class="bg-grafite/40 border-y border-carbone py-20">
+    <div class="max-w-3xl mx-auto px-5 lg:px-8 text-center">
+      <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-4">
+        Il nostro credo
+      </p>
+      <blockquote class="font-display text-2xl md:text-3xl lg:text-4xl text-panna leading-tight">
+        «Qui non si scende in campo per abitudine.<br />
+        Si scende in campo per la città.»
+      </blockquote>
+      <p class="text-fumo mt-6 text-sm tracking-wider">— A.S.D. Colleferro Calcio</p>
+    </div>
+  </section>
+</BaseLayout>

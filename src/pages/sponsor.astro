@@ -1,0 +1,121 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import SponsorStrip from "@/components/SponsorStrip.astro";
+import { sponsors } from "@/data/sponsors";
+
+const tiers = ["Main", "Technical", "Official", "Local"] as const;
+const labels: Record<(typeof tiers)[number], string> = {
+  Main: "Main Sponsor",
+  Technical: "Sponsor Tecnico",
+  Official: "Sponsor Ufficiali",
+  Local: "Partner del Territorio",
+};
+
+const pacchetti = [
+  {
+    name: "Main Sponsor",
+    desc: "Il tuo logo sul petto della maglia da gara e in tutti i materiali del club. Pochi posti disponibili ogni stagione.",
+    points: ["Logo sulla maglia ufficiale", "LED a bordo campo", "Visibilità su tutti i canali social", "Pacchetto Hospitality 12 posti"],
+  },
+  {
+    name: "Sponsor Ufficiale",
+    desc: "Presenza continua allo stadio e nei materiali stampa. Il modo migliore per legare il tuo brand al territorio.",
+    points: ["LED a bordo campo", "Logo su sito e social", "Menzione in comunicati stampa", "4 biglietti omaggio/partita"],
+  },
+  {
+    name: "Partner del Territorio",
+    desc: "Un supporto alla squadra della città, pensato per commercianti e piccole imprese di Colleferro e dintorni.",
+    points: ["Pannello pubblicitario stadio", "Logo nella sezione partner", "Pacchetto biglietti agevolato"],
+  },
+];
+---
+
+<BaseLayout
+  title="Sponsor — Colleferro Calcio"
+  description="Diventa sponsor del Colleferro Calcio: visibilità, territorio e un progetto sportivo che cresce."
+>
+  <Hero
+    eyebrow="Partnership"
+    title="Al fianco del Colleferro."
+    subtitle="Sponsorizzare il Colleferro Calcio significa legare il proprio nome a una realtà storica del territorio, con oltre 2.000 tifosi ogni domenica e migliaia di contatti sui canali digitali."
+    primaryCta={{ label: "Richiedi la brochure", href: "#contatto-sponsor" }}
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <div class="grid md:grid-cols-3 gap-6 mb-16">
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl font-bold text-oro">2.000+</p>
+        <p class="text-fumo mt-2 text-sm">spettatori medi al “Caslini”</p>
+      </div>
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl font-bold text-oro">15k</p>
+        <p class="text-fumo mt-2 text-sm">follower sui canali social</p>
+      </div>
+      <div class="bg-grafite border border-carbone p-6 text-center">
+        <p class="font-display text-5xl font-bold text-oro">100</p>
+        <p class="text-fumo mt-2 text-sm">anni di radicamento sul territorio</p>
+      </div>
+    </div>
+
+    <h2 class="font-display text-3xl md:text-4xl text-panna mb-8">I nostri pacchetti</h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      {
+        pacchetti.map((p) => (
+          <article class="bg-grafite border border-carbone hover:border-oro/60 p-6 md:p-7 transition-colors flex flex-col">
+            <h3 class="font-display text-2xl text-panna">{p.name}</h3>
+            <p class="text-fumo mt-3 text-sm leading-relaxed">{p.desc}</p>
+            <ul class="mt-5 space-y-2 text-sm text-panna">
+              {p.points.map((pt) => (
+                <li class="flex gap-2">
+                  <svg viewBox="0 0 24 24" class="w-4 h-4 text-oro flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <path d="M5 12l5 5L20 7" stroke-linecap="square" stroke-linejoin="miter" />
+                  </svg>
+                  <span>{pt}</span>
+                </li>
+              ))}
+            </ul>
+            <a href="#contatto-sponsor" class="btn btn-ghost mt-6 self-start text-xs">
+              Info e preventivo
+            </a>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="bg-grafite/40 border-y border-carbone py-20">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8 space-y-14">
+      {
+        tiers.map((t) => {
+          const list = sponsors.filter((s) => s.tier === t);
+          if (!list.length) return null;
+          return (
+            <div>
+              <h3 class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-5">
+                {labels[t]}
+              </h3>
+              <SponsorStrip sponsors={list} variant="grid" />
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <section id="contatto-sponsor" class="max-w-3xl mx-auto px-5 lg:px-8 py-20 md:py-24 text-center">
+    <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-4">
+      Parliamone
+    </p>
+    <h2 class="font-display text-3xl md:text-5xl text-panna leading-tight">
+      Costruiamo insieme qualcosa che duri.
+    </h2>
+    <p class="text-fumo mt-5 max-w-xl mx-auto leading-relaxed">
+      Scrivi a <a href="mailto:sponsor@colleferrocalcio.it" class="text-oro hover:underline">sponsor@colleferrocalcio.it</a> o chiama il nostro responsabile marketing. Ti ricontattiamo entro 48 ore.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3 justify-center">
+      <a href="mailto:sponsor@colleferrocalcio.it" class="btn btn-primary">Scrivi una email</a>
+      <a href="tel:+390612345678" class="btn btn-ghost">+39 06 1234 5678</a>
+    </div>
+  </section>
+</BaseLayout>

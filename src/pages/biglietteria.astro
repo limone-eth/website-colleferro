@@ -1,0 +1,163 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import { nextMatch } from "@/data/matches";
+
+const settori = [
+  {
+    nome: "Tribuna Coperta",
+    descr: "Posto numerato al centro del campo, coperto e riservato.",
+    intero: "15 €",
+    ridotto: "10 €",
+    highlight: true,
+  },
+  {
+    nome: "Tribuna Laterale",
+    descr: "Posto numerato ai lati della tribuna centrale, coperto.",
+    intero: "10 €",
+    ridotto: "7 €",
+  },
+  {
+    nome: "Gradinata",
+    descr: "Ingresso libero, settore rossonero e famiglia.",
+    intero: "8 €",
+    ridotto: "5 €",
+  },
+];
+
+const abbonamenti = [
+  {
+    nome: "Abbonamento Gold",
+    desc: "Tribuna Coperta · 15 partite casalinghe",
+    prezzo: "180 €",
+    nota: "Equivalente 12 € a partita",
+  },
+  {
+    nome: "Abbonamento Rossonero",
+    desc: "Gradinata · 15 partite casalinghe",
+    prezzo: "90 €",
+    nota: "Equivalente 6 € a partita",
+    highlight: true,
+  },
+  {
+    nome: "Abbonamento Famiglia",
+    desc: "2 adulti + 2 under 14 · Gradinata",
+    prezzo: "150 €",
+    nota: "Per tutta la stagione",
+  },
+];
+---
+
+<BaseLayout
+  title="Biglietteria — Colleferro Calcio"
+  description="Biglietti e abbonamenti per il Colleferro Calcio. Prevendite online e al botteghino dello Stadio Caslini."
+>
+  <Hero
+    eyebrow="Biglietteria"
+    title="Il tuo posto al “Caslini”."
+    subtitle="Biglietti singoli e abbonamenti per seguire ogni partita in casa del Colleferro."
+    primaryCta={{ label: `Biglietti · ${nextMatch.home.name}–${nextMatch.away.name}`, href: "#singola" }}
+    secondaryCta={{ label: "Abbonamenti", href: "#abbonamenti" }}
+  />
+
+  <!-- Prossima partita -->
+  <section id="singola" class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <header class="flex items-end justify-between mb-8 border-b border-carbone pb-4">
+      <div>
+        <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-1">Biglietti singola gara</p>
+        <h2 class="font-display text-3xl md:text-4xl text-panna">
+          {nextMatch.home.name} — {nextMatch.away.name}
+        </h2>
+        <p class="text-fumo mt-2">{nextMatch.dateLong} · ore {nextMatch.time} · {nextMatch.venue}</p>
+      </div>
+    </header>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      {
+        settori.map((s) => (
+          <article class={`relative bg-grafite border p-6 md:p-7 flex flex-col ${s.highlight ? "border-oro" : "border-carbone"}`}>
+            {s.highlight && (
+              <span class="absolute -top-3 left-6 font-display text-[0.6rem] tracking-[0.25em] uppercase bg-oro text-nero px-3 py-1">
+                Più richiesto
+              </span>
+            )}
+            <h3 class="font-display text-xl text-panna">{s.nome}</h3>
+            <p class="text-fumo mt-2 text-sm leading-relaxed flex-1">{s.descr}</p>
+            <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt class="font-display text-[0.6rem] tracking-[0.25em] uppercase text-fumo">Intero</dt>
+                <dd class="font-display text-2xl font-bold text-panna mt-1">{s.intero}</dd>
+              </div>
+              <div>
+                <dt class="font-display text-[0.6rem] tracking-[0.25em] uppercase text-fumo">Ridotto</dt>
+                <dd class="font-display text-2xl font-bold text-oro mt-1">{s.ridotto}</dd>
+              </div>
+            </dl>
+            <button type="button" class={`btn mt-6 justify-center ${s.highlight ? "btn-primary" : "btn-ghost"}`}>
+              Acquista online
+            </button>
+          </article>
+        ))
+      }
+    </div>
+
+    <p class="text-xs text-fumo mt-6 max-w-3xl">
+      <strong class="text-oro">Riduzioni:</strong> donne, over 65, residenti a Colleferro. Under 14 ingresso gratuito in Gradinata se accompagnati da un adulto pagante.
+    </p>
+  </section>
+
+  <!-- Abbonamenti -->
+  <section id="abbonamenti" class="bg-grafite/40 border-y border-carbone py-20 md:py-24">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+      <header class="flex items-end justify-between mb-8 border-b border-carbone pb-4">
+        <div>
+          <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-1">Abbonamenti</p>
+          <h2 class="font-display text-3xl md:text-4xl text-panna">Stagione 2025/26</h2>
+        </div>
+      </header>
+
+      <div class="grid md:grid-cols-3 gap-5">
+        {
+          abbonamenti.map((a) => (
+            <article class={`relative bg-nero border p-6 md:p-7 flex flex-col ${a.highlight ? "border-rosso" : "border-carbone"}`}>
+              {a.highlight && (
+                <span class="absolute -top-3 left-6 font-display text-[0.6rem] tracking-[0.25em] uppercase bg-rosso text-panna px-3 py-1">
+                  Scelta dei tifosi
+                </span>
+              )}
+              <h3 class="font-display text-xl text-panna">{a.nome}</h3>
+              <p class="text-fumo mt-2 text-sm">{a.desc}</p>
+              <p class="font-display text-5xl font-bold text-oro mt-6">{a.prezzo}</p>
+              <p class="text-xs text-fumo mt-2">{a.nota}</p>
+              <a href="/contatti" class={`btn mt-6 justify-center ${a.highlight ? "btn-primary" : "btn-ghost"}`}>
+                Richiedi l'abbonamento
+              </a>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Info utili -->
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 grid md:grid-cols-3 gap-8">
+    <div>
+      <h3 class="font-display text-xl text-oro mb-3">Online</h3>
+      <p class="text-panna text-sm leading-relaxed">
+        Biglietti disponibili dal mercoledì precedente la partita fino a fischio d'inizio. Stampa il biglietto o mostralo dallo smartphone.
+      </p>
+    </div>
+    <div>
+      <h3 class="font-display text-xl text-oro mb-3">Al botteghino</h3>
+      <p class="text-panna text-sm leading-relaxed">
+        Il botteghino apre un'ora prima del fischio d'inizio. Accettiamo contanti e pagamenti POS (bancomat, carte, smartphone).
+      </p>
+    </div>
+    <div>
+      <h3 class="font-display text-xl text-oro mb-3">Tifosi ospiti</h3>
+      <p class="text-panna text-sm leading-relaxed">
+        Settore ospiti in curva est. I biglietti sono in vendita esclusivamente nei punti autorizzati della squadra avversaria, secondo le indicazioni dell'Osservatorio.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

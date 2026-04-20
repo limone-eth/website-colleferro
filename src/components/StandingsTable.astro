@@ -1,0 +1,69 @@
+---
+interface Row {
+  pos: number;
+  team: string;
+  p: number;
+  w: number;
+  d: number;
+  l: number;
+  gf: number;
+  ga: number;
+  pts: number;
+  highlight?: boolean;
+}
+interface Props {
+  rows: Row[];
+  compact?: boolean;
+}
+const { rows, compact = false } = Astro.props;
+---
+
+<div class="overflow-x-auto bg-grafite border border-carbone">
+  <table class="w-full text-sm">
+    <caption class="sr-only">Classifica di campionato</caption>
+    <thead>
+      <tr class="font-display tracking-[0.15em] uppercase text-[0.7rem] text-fumo border-b border-carbone">
+        <th scope="col" class="px-3 py-3 text-left w-12">#</th>
+        <th scope="col" class="px-3 py-3 text-left">Squadra</th>
+        <th scope="col" class="px-2 py-3 text-center w-10">G</th>
+        {!compact && (
+          <>
+            <th scope="col" class="px-2 py-3 text-center w-10">V</th>
+            <th scope="col" class="px-2 py-3 text-center w-10">N</th>
+            <th scope="col" class="px-2 py-3 text-center w-10">P</th>
+            <th scope="col" class="px-2 py-3 text-center w-16">GF:GS</th>
+          </>
+        )}
+        <th scope="col" class="px-3 py-3 text-right w-14">Pti</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r) => (
+          <tr class={`border-b border-carbone/70 last:border-b-0 transition-colors ${r.highlight ? "bg-rosso/15 hover:bg-rosso/25" : "hover:bg-carbone/60"}`}>
+            <td class="px-3 py-3 text-fumo tabular-nums">
+              <span class={`inline-block w-6 text-center font-display ${r.highlight ? "text-oro font-bold" : ""}`}>
+                {r.pos}
+              </span>
+            </td>
+            <td class={`px-3 py-3 ${r.highlight ? "text-panna font-semibold" : "text-panna"}`}>
+              {r.team}
+            </td>
+            <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.p}</td>
+            {!compact && (
+              <>
+                <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.w}</td>
+                <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.d}</td>
+                <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.l}</td>
+                <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.gf}:{r.ga}</td>
+              </>
+            )}
+            <td class={`px-3 py-3 text-right font-display font-bold tabular-nums ${r.highlight ? "text-oro" : "text-panna"}`}>
+              {r.pts}
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,96 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import StandingsTable from "@/components/StandingsTable.astro";
+import MatchCard from "@/components/MatchCard.astro";
+import { matches } from "@/data/matches";
+import { standings } from "@/data/standings";
+
+const finished = matches.filter((m) => m.status === "finished");
+const upcoming = matches.filter((m) => m.status === "upcoming");
+---
+
+<BaseLayout
+  title="Stagione 2025/26 — Colleferro Calcio"
+  description="Calendario, risultati e classifica della stagione 2025/26 del Colleferro Calcio in Eccellenza Lazio."
+>
+  <Hero
+    eyebrow="Stagione 2025/26"
+    title="Calendario, risultati e classifica"
+    subtitle="Il cammino del Colleferro in Eccellenza Lazio, girone B. Ogni giornata, ogni punto, ogni gol."
+  />
+
+  <div class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24 space-y-20">
+    <!-- Classifica -->
+    <section>
+      <header class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+        <div>
+          <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-1">
+            Classifica
+          </p>
+          <h2 class="font-display text-3xl md:text-4xl text-panna">
+            Eccellenza Lazio · Girone B
+          </h2>
+        </div>
+      </header>
+      <StandingsTable rows={standings} />
+    </section>
+
+    <!-- Prossime partite -->
+    <section>
+      <header class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+        <h2 class="font-display text-2xl md:text-3xl text-panna">Prossime partite</h2>
+        <span class="font-display text-xs tracking-[0.25em] uppercase text-oro">
+          {upcoming.length} incontri
+        </span>
+      </header>
+      <div class="grid lg:grid-cols-2 gap-6">
+        {
+          upcoming.map((m) => (
+            <MatchCard
+              home={m.home}
+              away={m.away}
+              date={m.dateLong}
+              time={m.time}
+              venue={m.venue}
+              competition={m.competition}
+              matchday={m.matchday}
+              status={m.status}
+              ticketUrl={m.ticketUrl}
+            />
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Risultati -->
+    <section>
+      <header class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+        <h2 class="font-display text-2xl md:text-3xl text-panna">Risultati</h2>
+        <span class="font-display text-xs tracking-[0.25em] uppercase text-oro">
+          {finished.length} giocate
+        </span>
+      </header>
+      <div class="grid lg:grid-cols-2 gap-6">
+        {
+          finished
+            .slice()
+            .reverse()
+            .map((m) => (
+              <MatchCard
+                home={m.home}
+                away={m.away}
+                date={m.dateLong}
+                time={m.time}
+                venue={m.venue}
+                competition={m.competition}
+                matchday={m.matchday}
+                status={m.status}
+                score={m.score}
+              />
+            ))
+        }
+      </div>
+    </section>
+  </div>
+</BaseLayout>

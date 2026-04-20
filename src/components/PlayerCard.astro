@@ -1,0 +1,48 @@
+---
+interface Props {
+  number: number;
+  name: string;
+  role: string;
+  dob?: string;
+  nationality?: string;
+  image?: string;
+}
+const { number, name, role, dob, nationality, image } = Astro.props;
+---
+
+<article class="group relative bg-grafite border border-carbone hover:border-rosso/60 transition-colors overflow-hidden">
+  <div class="relative aspect-[3/4] bg-gradient-to-b from-rosso-deep via-nero to-carbone overflow-hidden">
+    {image ? (
+      <img
+        src={image}
+        alt={name}
+        loading="lazy"
+        class="w-full h-full object-cover grayscale contrast-110 group-hover:grayscale-0 transition-all duration-500"
+      />
+    ) : (
+      <div class="w-full h-full grid place-items-center">
+        <svg viewBox="0 0 24 24" class="w-20 h-20 text-panna/15" fill="currentColor" aria-hidden="true">
+          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z" />
+        </svg>
+      </div>
+    )}
+    <span class="absolute top-3 left-3 font-display font-bold text-5xl md:text-6xl leading-none text-oro drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">
+      {number}
+    </span>
+  </div>
+  <div class="p-4 border-t border-carbone">
+    <p class="font-display text-[0.65rem] tracking-[0.2em] uppercase text-rosso">
+      {role}
+    </p>
+    <h3 class="font-display text-lg md:text-xl text-panna mt-1 leading-tight">
+      {name}
+    </h3>
+    {(dob || nationality) && (
+      <p class="text-xs text-fumo mt-2">
+        {nationality && <span>{nationality}</span>}
+        {dob && nationality && <span class="mx-2">·</span>}
+        {dob && <span>{dob}</span>}
+      </p>
+    )}
+  </div>
+</article>

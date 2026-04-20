@@ -1,0 +1,56 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import PlayerCard from "@/components/PlayerCard.astro";
+import { squad } from "@/data/squad";
+
+const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const;
+const byRole = Object.fromEntries(
+  roles.map((r) => [r, squad.filter((p) => p.role === r)])
+);
+const labels: Record<(typeof roles)[number], string> = {
+  Portiere: "Portieri",
+  Difensore: "Difensori",
+  Centrocampista: "Centrocampisti",
+  Attaccante: "Attaccanti",
+};
+---
+
+<BaseLayout
+  title="Prima Squadra — Colleferro Calcio"
+  description="La rosa della prima squadra del Colleferro Calcio, stagione 2025/26."
+>
+  <Hero
+    eyebrow="Squadra"
+    title="Prima Squadra 2025/26"
+    subtitle="Ventuno ragazzi, una sola maglia. Questa è la rosa che ogni domenica scende in campo per i colori rossoneri."
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24 space-y-16">
+    {
+      roles.map((role) => (
+        <div>
+          <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+            <h2 class="font-display text-2xl md:text-3xl text-panna tracking-wide">
+              {labels[role]}
+            </h2>
+            <span class="font-display text-xs tracking-[0.25em] uppercase text-oro">
+              {byRole[role].length} giocatori
+            </span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+            {byRole[role].map((p) => (
+              <PlayerCard
+                number={p.number}
+                name={p.name}
+                role={p.role}
+                dob={p.dob}
+                nationality={p.nationality}
+              />
+            ))}
+          </div>
+        </div>
+      ))
+    }
+  </section>
+</BaseLayout>

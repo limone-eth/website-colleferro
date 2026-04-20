@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rosso: #C8102E;
+  --color-rosso-dark: #8A0B1F;
+  --color-rosso-deep: #5C0714;
+  --color-nero: #0A0A0A;
+  --color-grafite: #141414;
+  --color-carbone: #1F1F1F;
+  --color-oro: #E6B325;
+  --color-oro-soft: #F2C94C;
+  --color-panna: #F6F2EC;
+  --color-panna-soft: #FBF8F3;
+  --color-fumo: #9CA3A1;
+
+  --font-display: "Oswald", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--color-nero);
+    color: var(--color-panna);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+
+  ::selection {
+    background: var(--color-rosso);
+    color: var(--color-panna);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-oro);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .stripe-diagonal {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--color-rosso) 0 14px,
+      var(--color-nero) 14px 28px
+    );
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.4rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--color-rosso);
+    color: var(--color-panna);
+  }
+  .btn-primary:hover { background: var(--color-rosso-dark); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-panna);
+    border: 1px solid color-mix(in oklab, var(--color-panna) 30%, transparent);
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-oro);
+    color: var(--color-oro);
+  }
+
+  .btn-oro {
+    background: var(--color-oro);
+    color: var(--color-nero);
+  }
+  .btn-oro:hover { background: var(--color-oro-soft); }
+}

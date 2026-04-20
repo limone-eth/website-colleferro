@@ -1,0 +1,128 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+
+const contacts = [
+  {
+    label: "Segreteria",
+    email: "segreteria@colleferrocalcio.it",
+    phone: "+39 06 1234 5678",
+    hours: "Lun–Ven · 09:00–13:00",
+  },
+  {
+    label: "Ufficio stampa",
+    email: "stampa@colleferrocalcio.it",
+    phone: "+39 06 1234 5679",
+    hours: "Lun–Ven · 14:00–18:00",
+  },
+  {
+    label: "Settore giovanile",
+    email: "giovanili@colleferrocalcio.it",
+    phone: "+39 06 1234 5680",
+    hours: "Mar–Gio · 16:00–19:00",
+  },
+  {
+    label: "Biglietteria",
+    email: "biglietteria@colleferrocalcio.it",
+    phone: "+39 06 1234 5681",
+    hours: "Venerdì pre-gara · 17:00–20:00",
+  },
+];
+---
+
+<BaseLayout
+  title="Contatti — Colleferro Calcio"
+  description="Contatta la segreteria, l'ufficio stampa, il settore giovanile e la biglietteria del Colleferro Calcio."
+>
+  <Hero
+    eyebrow="Scrivici"
+    title="Parliamo."
+    subtitle="Domande, richieste, proposte di collaborazione: siamo facili da trovare. Scegli il referente giusto e ti rispondiamo in poche ore."
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24 grid lg:grid-cols-2 gap-12">
+    <div>
+      <h2 class="font-display text-2xl md:text-3xl text-panna mb-8">Referenti</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        {
+          contacts.map((c) => (
+            <article class="bg-grafite border border-carbone hover:border-rosso/60 p-5 transition-colors">
+              <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro">
+                {c.label}
+              </p>
+              <a href={`mailto:${c.email}`} class="block mt-2 text-panna hover:text-oro transition-colors break-words">
+                {c.email}
+              </a>
+              <a href={`tel:${c.phone.replace(/\s/g, "")}`} class="block mt-1 text-panna hover:text-oro transition-colors">
+                {c.phone}
+              </a>
+              <p class="text-xs text-fumo mt-3">{c.hours}</p>
+            </article>
+          ))
+        }
+      </div>
+
+      <div class="mt-10 bg-nero border-l-4 border-rosso p-6">
+        <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-2">
+          Sede societaria
+        </p>
+        <p class="text-panna leading-relaxed">
+          Stadio Comunale “Caslini”<br />
+          Via degli Esplosivi, 1<br />
+          00034 Colleferro (RM)
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="font-display text-2xl md:text-3xl text-panna mb-8">Scrivici un messaggio</h2>
+      <form class="space-y-5 bg-grafite border border-carbone p-6 md:p-8">
+        <div class="grid sm:grid-cols-2 gap-5">
+          <label class="block">
+            <span class="font-display text-xs tracking-[0.2em] uppercase text-fumo">Nome</span>
+            <input
+              type="text"
+              name="nome"
+              required
+              class="mt-2 w-full bg-nero border border-carbone focus:border-oro px-3 py-2.5 text-panna outline-none"
+            />
+          </label>
+          <label class="block">
+            <span class="font-display text-xs tracking-[0.2em] uppercase text-fumo">Email</span>
+            <input
+              type="email"
+              name="email"
+              required
+              class="mt-2 w-full bg-nero border border-carbone focus:border-oro px-3 py-2.5 text-panna outline-none"
+            />
+          </label>
+        </div>
+        <label class="block">
+          <span class="font-display text-xs tracking-[0.2em] uppercase text-fumo">Oggetto</span>
+          <input
+            type="text"
+            name="oggetto"
+            required
+            class="mt-2 w-full bg-nero border border-carbone focus:border-oro px-3 py-2.5 text-panna outline-none"
+          />
+        </label>
+        <label class="block">
+          <span class="font-display text-xs tracking-[0.2em] uppercase text-fumo">Messaggio</span>
+          <textarea
+            name="messaggio"
+            rows="5"
+            required
+            class="mt-2 w-full bg-nero border border-carbone focus:border-oro px-3 py-2.5 text-panna outline-none resize-y"
+          ></textarea>
+        </label>
+        <label class="flex items-start gap-3 text-xs text-fumo">
+          <input type="checkbox" required class="mt-1 accent-rosso" />
+          Acconsento al trattamento dei dati secondo la <a href="#" class="text-oro hover:underline">privacy policy</a>.
+        </label>
+        <button type="submit" class="btn btn-primary w-full justify-center">
+          Invia messaggio
+        </button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

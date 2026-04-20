@@ -1,0 +1,99 @@
+---
+interface Team {
+  name: string;
+  short: string;
+}
+interface Props {
+  home: Team;
+  away: Team;
+  date: string;
+  time: string;
+  venue: string;
+  competition: string;
+  matchday: string;
+  status?: "upcoming" | "live" | "finished";
+  score?: { home: number; away: number };
+  ticketUrl?: string;
+}
+const {
+  home,
+  away,
+  date,
+  time,
+  venue,
+  competition,
+  matchday,
+  status = "upcoming",
+  score,
+  ticketUrl,
+} = Astro.props;
+---
+
+<article class="bg-grafite border border-carbone hover:border-rosso/60 transition-colors">
+  <div class="flex items-center justify-between px-5 py-3 border-b border-carbone bg-nero/50">
+    <span class="font-display text-xs tracking-[0.2em] uppercase text-oro">
+      {competition}
+    </span>
+    <span class="font-display text-xs tracking-[0.2em] uppercase text-fumo">
+      {matchday}
+    </span>
+  </div>
+
+  <div class="p-6 md:p-8">
+    <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+      <div class="text-center md:text-right">
+        <div class="w-14 h-14 md:w-20 md:h-20 mx-auto md:ml-auto md:mr-0 grid place-items-center bg-carbone border border-fumo/20">
+          <span class="font-display font-bold text-panna text-lg md:text-2xl">
+            {home.short}
+          </span>
+        </div>
+        <p class="mt-3 font-display tracking-wide text-panna text-sm md:text-base">
+          {home.name}
+        </p>
+      </div>
+
+      <div class="text-center px-2 md:px-6">
+        {status === "finished" && score ? (
+          <div class="font-display text-3xl md:text-5xl font-bold text-oro tabular-nums">
+            {score.home} <span class="text-fumo mx-1">–</span> {score.away}
+          </div>
+        ) : (
+          <>
+            <p class="font-display text-xs tracking-[0.2em] uppercase text-fumo">
+              {date}
+            </p>
+            <p class="font-display text-2xl md:text-4xl font-bold text-panna tabular-nums mt-1">
+              {time}
+            </p>
+          </>
+        )}
+      </div>
+
+      <div class="text-center md:text-left">
+        <div class="w-14 h-14 md:w-20 md:h-20 mx-auto md:mr-auto md:ml-0 grid place-items-center bg-carbone border border-fumo/20">
+          <span class="font-display font-bold text-panna text-lg md:text-2xl">
+            {away.short}
+          </span>
+        </div>
+        <p class="mt-3 font-display tracking-wide text-panna text-sm md:text-base">
+          {away.name}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-6 pt-5 border-t border-carbone flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <p class="text-sm text-fumo">
+        <svg class="inline w-4 h-4 mr-1 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 2a7 7 0 017 7c0 5-7 13-7 13S5 14 5 9a7 7 0 017-7z" />
+          <circle cx="12" cy="9" r="2.5" />
+        </svg>
+        {venue}
+      </p>
+      {ticketUrl && status === "upcoming" && (
+        <a href={ticketUrl} class="btn btn-oro text-sm">
+          Acquista biglietti
+        </a>
+      )}
+    </div>
+  </div>
+</article>

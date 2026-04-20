@@ -1,0 +1,80 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-nero border-t border-rosso/40 mt-24">
+  <div class="stripe-diagonal h-1"></div>
+
+  <div class="max-w-7xl mx-auto px-5 lg:px-8 py-14 grid gap-10 md:grid-cols-4">
+    <div class="md:col-span-1">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="w-10 h-10 grid place-items-center bg-rosso">
+          <svg viewBox="0 0 32 32" class="w-6 h-6 fill-oro" aria-hidden="true">
+            <path d="M16 4l3 6.2 6.8 1-5 4.8 1.2 6.8L16 19.6 10 22.8l1.2-6.8-5-4.8 6.8-1L16 4z" />
+          </svg>
+        </span>
+        <div class="font-display text-panna leading-tight">
+          <span class="block text-[0.65rem] tracking-[0.2em] text-fumo uppercase">A.S.D.</span>
+          <span class="block tracking-wide">Colleferro Calcio</span>
+        </div>
+      </div>
+      <p class="text-fumo text-sm leading-relaxed">
+        Passione rossonera dal 1925. Cuore di Colleferro, orgoglio della Valle del Sacco.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-display text-sm tracking-[0.2em] text-oro mb-4">Il Club</h3>
+      <ul class="space-y-2 text-sm">
+        <li><a class="text-panna hover:text-oro transition-colors" href="/storia">Storia</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/stadio">Lo Stadio</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/squadra/prima-squadra">Prima Squadra</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/squadra/staff">Staff</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="font-display text-sm tracking-[0.2em] text-oro mb-4">Segui la squadra</h3>
+      <ul class="space-y-2 text-sm">
+        <li><a class="text-panna hover:text-oro transition-colors" href="/stagione">Stagione 2025/26</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/news">News</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/biglietteria">Biglietteria</a></li>
+        <li><a class="text-panna hover:text-oro transition-colors" href="/shop">Shop ufficiale</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="font-display text-sm tracking-[0.2em] text-oro mb-4">Contatti</h3>
+      <address class="not-italic text-sm text-panna leading-relaxed">
+        Stadio Comunale "Caslini"<br />
+        Via degli Esplosivi, 1<br />
+        00034 Colleferro (RM)
+      </address>
+      <p class="text-sm text-fumo mt-3">
+        <a class="hover:text-oro transition-colors" href="mailto:info@colleferrocalcio.it">info@colleferrocalcio.it</a>
+      </p>
+      <div class="flex gap-3 mt-4">
+        <a href="#" aria-label="Facebook" class="w-9 h-9 grid place-items-center border border-fumo/40 text-panna hover:text-oro hover:border-oro transition-colors">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current" aria-hidden="true"><path d="M13 22v-8h3l.5-4H13V7.5c0-1.1.3-1.9 1.9-1.9H17V2.1C16.6 2 15.4 2 14 2c-3 0-5 1.8-5 5.2V10H6v4h3v8h4z"/></svg>
+        </a>
+        <a href="#" aria-label="Instagram" class="w-9 h-9 grid place-items-center border border-fumo/40 text-panna hover:text-oro hover:border-oro transition-colors">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+        </a>
+        <a href="#" aria-label="YouTube" class="w-9 h-9 grid place-items-center border border-fumo/40 text-panna hover:text-oro hover:border-oro transition-colors">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 fill-current" aria-hidden="true"><path d="M23 7.5c-.3-2-1.8-2.5-3.7-2.7C16.8 4.5 12 4.5 12 4.5s-4.8 0-7.3.3C2.8 5 1.3 5.5 1 7.5.7 9.4.7 12 .7 12s0 2.6.3 4.5c.3 2 1.8 2.5 3.7 2.7 2.5.3 7.3.3 7.3.3s4.8 0 7.3-.3c1.9-.2 3.4-.7 3.7-2.7.3-1.9.3-4.5.3-4.5s0-2.6-.3-4.5zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t border-carbone">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8 py-6 flex flex-col md:flex-row gap-4 items-center justify-between text-xs text-fumo">
+      <p>© {year} A.S.D. Colleferro Calcio. Tutti i diritti riservati.</p>
+      <p>
+        P.IVA 0000000000 ·
+        <a href="#" class="hover:text-oro transition-colors">Privacy</a> ·
+        <a href="#" class="hover:text-oro transition-colors">Cookie</a>
+      </p>
+    </div>
+  </div>
+</footer>

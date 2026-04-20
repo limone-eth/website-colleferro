@@ -1,0 +1,43 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import NewsCard from "@/components/NewsCard.astro";
+import { news } from "@/data/news";
+
+const [first, ...rest] = news;
+---
+
+<BaseLayout
+  title="News — Colleferro Calcio"
+  description="Tutte le notizie ufficiali del Colleferro Calcio: prima squadra, società, biglietteria, settore giovanile."
+>
+  <Hero
+    eyebrow="News"
+    title="La voce del club"
+    subtitle="Aggiornamenti ufficiali, comunicati, interviste. Tutto quello che accade in casa rossonera."
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <NewsCard
+        slug={first.slug}
+        title={first.title}
+        excerpt={first.excerpt}
+        date={first.date}
+        category={first.category}
+        featured={true}
+      />
+      {
+        rest.map((n) => (
+          <NewsCard
+            slug={n.slug}
+            title={n.title}
+            excerpt={n.excerpt}
+            date={n.date}
+            category={n.category}
+          />
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
