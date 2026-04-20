@@ -1,0 +1,167 @@
+---
+interface Props {
+  name: string;
+  value?: string;
+  placeholder?: string;
+}
+const { name, value = "", placeholder = "Scrivi l'articolo…" } = Astro.props;
+---
+
+<div class="rich-editor border border-carbone bg-nero" data-placeholder={placeholder}>
+  <div class="rich-editor__toolbar flex flex-wrap gap-1 border-b border-carbone bg-grafite p-2">
+    <button type="button" data-cmd="bold" class="toolbar-btn" title="Grassetto (⌘B)"><strong>B</strong></button>
+    <button type="button" data-cmd="italic" class="toolbar-btn" title="Corsivo (⌘I)"><em>I</em></button>
+    <button type="button" data-cmd="strike" class="toolbar-btn" title="Barrato"><s>S</s></button>
+    <span class="toolbar-divider"></span>
+    <button type="button" data-cmd="h2" class="toolbar-btn" title="Titolo">H2</button>
+    <button type="button" data-cmd="h3" class="toolbar-btn" title="Sottotitolo">H3</button>
+    <span class="toolbar-divider"></span>
+    <button type="button" data-cmd="bulletList" class="toolbar-btn" title="Lista puntata">• List</button>
+    <button type="button" data-cmd="orderedList" class="toolbar-btn" title="Lista numerata">1. List</button>
+    <button type="button" data-cmd="blockquote" class="toolbar-btn" title="Citazione">❝</button>
+    <button type="button" data-cmd="hr" class="toolbar-btn" title="Separatore">—</button>
+    <span class="toolbar-divider"></span>
+    <button type="button" data-cmd="link" class="toolbar-btn" title="Link">🔗</button>
+    <button type="button" data-cmd="unlink" class="toolbar-btn" title="Rimuovi link">⊘</button>
+    <span class="toolbar-divider"></span>
+    <button type="button" data-cmd="undo" class="toolbar-btn" title="Annulla (⌘Z)">↶</button>
+    <button type="button" data-cmd="redo" class="toolbar-btn" title="Ripeti (⌘⇧Z)">↷</button>
+  </div>
+  <div class="rich-editor__surface min-h-[280px]"></div>
+  <textarea name={name} class="hidden" aria-hidden="true">{value}</textarea>
+</div>
+
+<style is:global>
+  .rich-editor__surface {
+    padding: 1rem;
+    color: #F4EADF;
+    font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+    outline: none;
+  }
+  .rich-editor__surface:focus { outline: none; }
+  .rich-editor__surface .ProseMirror { min-height: 260px; outline: none; }
+  .rich-editor__surface .ProseMirror p { margin: 0 0 0.9em; }
+  .rich-editor__surface .ProseMirror h2 { font-family: "Oswald", sans-serif; font-size: 1.5rem; margin: 1.2em 0 0.5em; color: #F4EADF; }
+  .rich-editor__surface .ProseMirror h3 { font-family: "Oswald", sans-serif; font-size: 1.2rem; margin: 1em 0 0.4em; color: #F4EADF; }
+  .rich-editor__surface .ProseMirror ul,
+  .rich-editor__surface .ProseMirror ol { padding-left: 1.5em; margin: 0 0 0.9em; }
+  .rich-editor__surface .ProseMirror blockquote { border-left: 3px solid var(--color-rosso, #B3001F); padding-left: 1em; color: #9A8E80; margin: 0 0 0.9em; }
+  .rich-editor__surface .ProseMirror hr { border: 0; border-top: 1px solid #2B2B2B; margin: 1.2em 0; }
+  .rich-editor__surface .ProseMirror a { color: #D4A64A; text-decoration: underline; }
+  .rich-editor__surface .ProseMirror p.is-editor-empty:first-child::before {
+    color: #5F544A;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  .toolbar-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #F4EADF;
+    padding: 0.3rem 0.55rem;
+    font-family: "Inter", sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .15s;
+  }
+  .toolbar-btn:hover { background: rgba(212,166,74,0.1); color: #D4A64A; }
+  .toolbar-btn.is-active { background: rgba(212,166,74,0.2); color: #D4A64A; border-color: rgba(212,166,74,0.4); }
+  .toolbar-divider { width: 1px; background: #2B2B2B; margin: 0 0.25rem; }
+</style>
+
+<script>
+  import { Editor } from "@tiptap/core";
+  import StarterKit from "@tiptap/starter-kit";
+  import Link from "@tiptap/extension-link";
+  import { Placeholder } from "@tiptap/extensions/placeholder";
+
+  document.querySelectorAll<HTMLDivElement>(".rich-editor").forEach((root) => {
+    const surface = root.querySelector<HTMLDivElement>(".rich-editor__surface");
+    const textarea = root.querySelector<HTMLTextAreaElement>("textarea");
+    const placeholder = root.getAttribute("data-placeholder") ?? "";
+    if (!surface || !textarea) return;
+
+    const initialContent = textarea.value;
+
+    const editor = new Editor({
+      element: surface,
+      extensions: [
+        StarterKit.configure({ heading: { levels: [2, 3] } }),
+        Link.configure({ openOnClick: false, autolink: true }),
+        Placeholder.configure({ placeholder }),
+      ],
+      content: initialContent || "",
+      onUpdate: ({ editor }) => {
+        const html = editor.getHTML();
+        textarea.value = html === "<p></p>" ? "" : html;
+      },
+    });
+
+    // sync once on load
+    textarea.value = editor.getHTML() === "<p></p>" ? "" : editor.getHTML();
+
+    // toolbar wiring
+    const setActive = () => {
+      root.querySelectorAll<HTMLButtonElement>(".toolbar-btn").forEach((btn) => {
+        const cmd = btn.dataset.cmd;
+        let active = false;
+        switch (cmd) {
+          case "bold": active = editor.isActive("bold"); break;
+          case "italic": active = editor.isActive("italic"); break;
+          case "strike": active = editor.isActive("strike"); break;
+          case "h2": active = editor.isActive("heading", { level: 2 }); break;
+          case "h3": active = editor.isActive("heading", { level: 3 }); break;
+          case "bulletList": active = editor.isActive("bulletList"); break;
+          case "orderedList": active = editor.isActive("orderedList"); break;
+          case "blockquote": active = editor.isActive("blockquote"); break;
+          case "link": active = editor.isActive("link"); break;
+        }
+        btn.classList.toggle("is-active", active);
+      });
+    };
+
+    editor.on("selectionUpdate", setActive);
+    editor.on("transaction", setActive);
+
+    root.querySelectorAll<HTMLButtonElement>(".toolbar-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const cmd = btn.dataset.cmd;
+        const chain = editor.chain().focus();
+        switch (cmd) {
+          case "bold": chain.toggleBold().run(); break;
+          case "italic": chain.toggleItalic().run(); break;
+          case "strike": chain.toggleStrike().run(); break;
+          case "h2": chain.toggleHeading({ level: 2 }).run(); break;
+          case "h3": chain.toggleHeading({ level: 3 }).run(); break;
+          case "bulletList": chain.toggleBulletList().run(); break;
+          case "orderedList": chain.toggleOrderedList().run(); break;
+          case "blockquote": chain.toggleBlockquote().run(); break;
+          case "hr": chain.setHorizontalRule().run(); break;
+          case "link": {
+            const previous = editor.getAttributes("link").href ?? "";
+            const url = window.prompt("URL:", previous);
+            if (url === null) return;
+            if (url === "") { chain.unsetLink().run(); return; }
+            const safeUrl = /^(https?:|mailto:|tel:|\/)/.test(url) ? url : `https://${url}`;
+            chain.setLink({ href: safeUrl }).run();
+            break;
+          }
+          case "unlink": chain.unsetLink().run(); break;
+          case "undo": chain.undo().run(); break;
+          case "redo": chain.redo().run(); break;
+        }
+      });
+    });
+
+    // ensure form submit serializes latest content
+    const form = root.closest("form");
+    form?.addEventListener("submit", () => {
+      const html = editor.getHTML();
+      textarea.value = html === "<p></p>" ? "" : html;
+    });
+  });
+</script>

@@ -44,7 +44,7 @@ export type NewsPost = {
   dateIso: string;
   category: string;
   author: string;
-  body: string[];
+  body: string;
   featured?: boolean;
 };
 
@@ -132,9 +132,33 @@ const rowToNews = (r: Record<string, unknown>): NewsPost => ({
   dateIso: r.date_iso as string,
   category: r.category as string,
   author: r.author as string,
-  body: JSON.parse(r.body as string) as string[],
+  body: bodyToHtml(r.body as string),
   featured: Number(r.featured) === 1,
 });
+
+// Body is HTML. Legacy rows stored it as JSON array of plain-text paragraphs —
+// convert on read for backward compatibility.
+function bodyToHtml(raw: string): string {
+  if (!raw) return "";
+  if (raw.trimStart().startsWith("[")) {
+    try {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        return arr.map((p) => `<p>${escapeHtml(String(p))}</p>`).join("");
+      }
+    } catch { /* fall through */ }
+  }
+  return raw;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export async function getAllNews(): Promise<NewsPost[]> {
   const { rows } = await db.execute("SELECT * FROM news ORDER BY date_iso DESC");

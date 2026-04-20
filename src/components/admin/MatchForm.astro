@@ -1,79 +1,98 @@
 ---
 import type { Match } from "@/lib/db";
+import { TEAM_SHORT, parseMatchdayNumber, ymdFromKickoff } from "@/lib/match-utils";
+
 interface Props {
   action: string;
   match?: Match;
   error?: string;
+  teams: string[];
+  usedMatchdays: number[];
 }
-const { action, match, error } = Astro.props;
+const { action, match, error, teams, usedMatchdays } = Astro.props;
+
+const currentMatchdayNum = match ? parseMatchdayNumber(match.matchday) : null;
+const forbiddenMatchdays = new Set(usedMatchdays.filter((n) => n !== currentMatchdayNum));
+const datePrefill = match ? ymdFromKickoff(match.kickoffTs) : "";
+const teamOptions = teams.slice().sort((a, b) => (a === "Colleferro" ? -1 : b === "Colleferro" ? 1 : a.localeCompare(b)));
 ---
 
 <form method="post" action={action} class="space-y-5 bg-grafite border border-carbone p-6">
   {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
 
-  <div class="grid md:grid-cols-2 gap-4">
+  <div class="grid md:grid-cols-3 gap-4">
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">ID (es. m-08)</span>
-      <input name="id" required value={match?.id ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">ID partita</span>
+      <input name="id" required value={match?.id ?? ""} placeholder="m-30" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Giornata</span>
-      <input name="matchday" required value={match?.matchday ?? ""} placeholder="26ª Giornata" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Giornata (numero)</span>
+      <input
+        type="number"
+        name="matchdayNum"
+        required
+        min="1"
+        max="40"
+        value={currentMatchdayNum ?? ""}
+        data-used={JSON.stringify([...forbiddenMatchdays])}
+        class="matchday-input w-full bg-nero border border-carbone px-3 py-2 text-panna"
+      />
+      <p class="matchday-hint text-xs text-fumo mt-1">Solo numeri non ancora usati.</p>
     </label>
-    <label class="block md:col-span-2">
+    <label class="block">
       <span class="font-display text-xs uppercase text-fumo block mb-2">Competizione</span>
       <input name="competition" required value={match?.competition ?? "Eccellenza Lazio — Girone B"} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
   </div>
 
-  <div class="grid md:grid-cols-3 gap-4 items-end">
+  <div class="grid md:grid-cols-3 gap-4">
     <label class="block md:col-span-2">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Data estesa (es. Domenica 26 Aprile 2026)</span>
-      <input name="dateLong" required value={match?.dateLong ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Data</span>
+      <input type="date" name="matchDate" required value={datePrefill} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Ora (HH:MM)</span>
-      <input name="time" required value={match?.time ?? "15:00"} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
-    <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Data breve (es. 26 APR)</span>
-      <input name="date" required value={match?.date ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
-    <label class="block md:col-span-2">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Stadio</span>
-      <input name="venue" required value={match?.venue ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Ora</span>
+      <input type="time" name="matchTime" required value={match?.time ?? "15:00"} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
   </div>
 
-  <div class="grid md:grid-cols-4 gap-4">
-    <label class="block md:col-span-2">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Casa — Nome</span>
-      <input name="homeName" required value={match?.home.name ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+  <div class="grid md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Squadra di casa</span>
+      <select name="homeName" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        <option value="">— scegli —</option>
+        {teamOptions.map((t) => (
+          <option value={t} selected={match?.home.name === t} data-short={TEAM_SHORT[t] ?? ""}>{t}</option>
+        ))}
+      </select>
     </label>
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Casa — Sigla</span>
-      <input name="homeShort" required maxlength="4" value={match?.home.short ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Squadra ospite</span>
+      <select name="awayName" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        <option value="">— scegli —</option>
+        {teamOptions.map((t) => (
+          <option value={t} selected={match?.away.name === t} data-short={TEAM_SHORT[t] ?? ""}>{t}</option>
+        ))}
+      </select>
     </label>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4">
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Casa — Gol</span>
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Gol casa (se conclusa)</span>
       <input type="number" name="scoreHome" min="0" value={match?.score?.home ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
-
-    <label class="block md:col-span-2">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Ospite — Nome</span>
-      <input name="awayName" required value={match?.away.name ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Ospite — Sigla</span>
-      <input name="awayShort" required maxlength="4" value={match?.away.short ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
-    </label>
-    <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Ospite — Gol</span>
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Gol ospite (se conclusa)</span>
       <input type="number" name="scoreAway" min="0" value={match?.score?.away ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
   </div>
 
   <div class="grid md:grid-cols-2 gap-4">
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Stadio</span>
+      <input name="venue" required value={match?.venue ?? ""} placeholder='Stadio Comunale "Andrea Caslini"' class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
     <label class="block">
       <span class="font-display text-xs uppercase text-fumo block mb-2">Stato</span>
       <select name="status" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
@@ -82,14 +101,43 @@ const { action, match, error } = Astro.props;
         <option value="finished" selected={match?.status === "finished"}>Conclusa</option>
       </select>
     </label>
-    <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">URL biglietteria (opzionale)</span>
-      <input name="ticketUrl" value={match?.ticketUrl ?? ""} placeholder="/biglietteria" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
   </div>
+
+  <label class="block">
+    <span class="font-display text-xs uppercase text-fumo block mb-2">URL biglietteria (opzionale)</span>
+    <input name="ticketUrl" value={match?.ticketUrl ?? ""} placeholder="/biglietteria" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+  </label>
 
   <div class="flex gap-3 pt-2">
     <button type="submit" class="btn btn-primary">Salva</button>
     <a href="/admin/matches" class="btn btn-ghost">Annulla</a>
   </div>
 </form>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>(".matchday-input");
+  const hint = document.querySelector<HTMLParagraphElement>(".matchday-hint");
+  if (input && hint) {
+    const used: number[] = JSON.parse(input.dataset.used ?? "[]");
+    const validate = () => {
+      const n = Number(input.value);
+      if (!n) {
+        hint.textContent = "Solo numeri non ancora usati.";
+        hint.className = "matchday-hint text-xs text-fumo mt-1";
+        input.setCustomValidity("");
+        return;
+      }
+      if (used.includes(n)) {
+        hint.textContent = `Giornata ${n} è già inserita. Scegli un altro numero.`;
+        hint.className = "matchday-hint text-xs text-rosso mt-1";
+        input.setCustomValidity("Giornata già inserita");
+      } else {
+        hint.textContent = `Giornata ${n} disponibile.`;
+        hint.className = "matchday-hint text-xs text-oro mt-1";
+        input.setCustomValidity("");
+      }
+    };
+    input.addEventListener("input", validate);
+    validate();
+  }
+</script>

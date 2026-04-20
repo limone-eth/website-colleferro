@@ -1,12 +1,12 @@
 ---
 import type { NewsPost } from "@/lib/db";
+import RichEditor from "@/components/admin/RichEditor.astro";
 interface Props {
   action: string;
   post?: NewsPost;
   error?: string;
 }
 const { action, post, error } = Astro.props;
-const bodyText = post?.body.join("\n\n") ?? "";
 const categories = ["Prima Squadra", "Società", "Biglietteria", "Giovanili", "Partner"];
 ---
 
@@ -46,10 +46,10 @@ const categories = ["Prima Squadra", "Società", "Biglietteria", "Giovanili", "P
       <span class="font-display text-xs uppercase text-fumo block mb-2">Autore</span>
       <input name="author" required value={post?.author ?? "Redazione"} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
-    <label class="block md:col-span-2">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Corpo articolo (una riga vuota separa i paragrafi)</span>
-      <textarea name="body" required rows="10" class="w-full bg-nero border border-carbone px-3 py-2 text-panna font-mono text-sm">{bodyText}</textarea>
-    </label>
+    <div class="md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Corpo articolo</span>
+      <RichEditor name="body" value={post?.body ?? ""} placeholder="Scrivi l'articolo…" />
+    </div>
     <label class="flex items-center gap-3 md:col-span-2">
       <input type="checkbox" name="featured" value="1" checked={post?.featured} class="accent-oro" />
       <span class="font-display text-xs uppercase text-fumo">In evidenza in home</span>

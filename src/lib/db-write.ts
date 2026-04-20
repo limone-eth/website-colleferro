@@ -98,7 +98,7 @@ export type NewsInput = {
   dateIso: string;
   category: string;
   author: string;
-  body: string[];
+  body: string;
   featured: boolean;
 };
 
@@ -106,12 +106,12 @@ export async function upsertNews(n: NewsInput, existingSlug?: string) {
   if (existingSlug) {
     await db.execute({
       sql: `UPDATE news SET slug=?, title=?, excerpt=?, date=?, date_iso=?, category=?, author=?, body=?, featured=?, updated_at=unixepoch() WHERE slug=?`,
-      args: [n.slug, n.title, n.excerpt, n.date, n.dateIso, n.category, n.author, JSON.stringify(n.body), n.featured ? 1 : 0, existingSlug],
+      args: [n.slug, n.title, n.excerpt, n.date, n.dateIso, n.category, n.author, n.body, n.featured ? 1 : 0, existingSlug],
     });
   } else {
     await db.execute({
       sql: `INSERT INTO news (slug, title, excerpt, date, date_iso, category, author, body, featured) VALUES (?,?,?,?,?,?,?,?,?)`,
-      args: [n.slug, n.title, n.excerpt, n.date, n.dateIso, n.category, n.author, JSON.stringify(n.body), n.featured ? 1 : 0],
+      args: [n.slug, n.title, n.excerpt, n.date, n.dateIso, n.category, n.author, n.body, n.featured ? 1 : 0],
     });
   }
 }
