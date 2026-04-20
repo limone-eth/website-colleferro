@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import { requireAdmin } from "@/lib/auth";
 import { getSquad } from "@/lib/db";
 import { upsertPlayer, deletePlayer } from "@/lib/db-write";
+import { NATIONALITIES } from "@/lib/nationalities";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -64,7 +65,12 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
     </label>
     <label class="block">
       <span class="font-display text-xs uppercase text-fumo block mb-1">Naz.</span>
-      <input name="nationality" maxlength="3" placeholder="ITA" class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
+      <select name="nationality" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        <option value="">—</option>
+        {NATIONALITIES.map((n) => (
+          <option value={n.code} selected={n.code === "ITA"}>{n.code} · {n.label}</option>
+        ))}
+      </select>
     </label>
     <div class="md:col-span-6">
       <button type="submit" class="btn btn-primary">Aggiungi</button>
