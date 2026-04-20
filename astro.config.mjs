@@ -6,6 +6,9 @@ export default defineConfig({
   site: 'https://www.colleferrocalcio.it',
   output: 'server',
   adapter: vercel(),
+  security: {
+    checkOrigin: false,
+  },
   vite: {
     plugins: [tailwindcss()],
   },
