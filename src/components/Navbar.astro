@@ -1,4 +1,6 @@
 ---
+import { withBase } from "@/lib/url";
+
 const nav = [
   {
     label: "Club",
@@ -23,8 +25,11 @@ const nav = [
 ];
 
 const currentPath = Astro.url.pathname;
-const isActive = (href: string) =>
-  href === "/" ? currentPath === "/" : currentPath.startsWith(href);
+const isActive = (href: string) => {
+  const full = withBase(href);
+  if (href === "/") return currentPath === full || currentPath === `${full}/` || currentPath === full.replace(/\/$/, "");
+  return currentPath.startsWith(full);
+};
 ---
 
 <header class="sticky top-0 z-40 bg-nero/95 backdrop-blur border-b border-rosso/40">
@@ -32,7 +37,7 @@ const isActive = (href: string) =>
 
   <div class="max-w-7xl mx-auto px-5 lg:px-8">
     <div class="flex items-center justify-between h-16 lg:h-20 gap-6">
-      <a href="/" class="flex items-center gap-3 group" aria-label="Colleferro Calcio — Home">
+      <a href={withBase("/")} class="flex items-center gap-3 group" aria-label="Colleferro Calcio — Home">
         <span class="w-10 h-10 lg:w-11 lg:h-11 grid place-items-center bg-rosso">
           <svg viewBox="0 0 32 32" class="w-6 h-6 fill-oro" aria-hidden="true">
             <path d="M16 4l3 6.2 6.8 1-5 4.8 1.2 6.8L16 19.6 10 22.8l1.2-6.8-5-4.8 6.8-1L16 4z" />
@@ -66,7 +71,7 @@ const isActive = (href: string) =>
                 <div class="absolute top-full left-0 min-w-[12rem] bg-grafite border border-rosso/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible focus-within:opacity-100 focus-within:visible transition-opacity">
                   {item.children.map((c) => (
                     <a
-                      href={c.href}
+                      href={withBase(c.href)}
                       class={`block px-4 py-2.5 font-display text-sm uppercase tracking-wider border-l-2 transition-colors ${
                         isActive(c.href)
                           ? "text-oro border-oro bg-nero"
@@ -80,7 +85,7 @@ const isActive = (href: string) =>
               </div>
             ) : (
               <a
-                href={item.href}
+                href={withBase(item.href)}
                 class={`px-3 py-2 font-display text-sm uppercase tracking-wider transition-colors ${
                   isActive(item.href) ? "text-oro" : "text-panna hover:text-oro"
                 }`}
@@ -93,7 +98,7 @@ const isActive = (href: string) =>
       </nav>
 
       <a
-        href="/biglietteria"
+        href={withBase("/biglietteria")}
         class="hidden md:inline-flex btn btn-oro text-sm"
       >
         Biglietteria
@@ -125,7 +130,7 @@ const isActive = (href: string) =>
               </p>
               {item.children.map((c) => (
                 <a
-                  href={c.href}
+                  href={withBase(c.href)}
                   class={`block py-2 font-display text-sm uppercase tracking-wider ${
                     isActive(c.href) ? "text-oro" : "text-panna"
                   }`}
@@ -136,7 +141,7 @@ const isActive = (href: string) =>
             </div>
           ) : (
             <a
-              href={item.href}
+              href={withBase(item.href)}
               class={`py-3 font-display text-sm uppercase tracking-wider border-b border-carbone last:border-b-0 ${
                 isActive(item.href) ? "text-oro" : "text-panna"
               }`}
@@ -146,7 +151,7 @@ const isActive = (href: string) =>
           )
         )
       }
-      <a href="/biglietteria" class="btn btn-oro mt-4 justify-center">Biglietteria</a>
+      <a href={withBase("/biglietteria")} class="btn btn-oro mt-4 justify-center">Biglietteria</a>
     </nav>
   </div>
 </header>

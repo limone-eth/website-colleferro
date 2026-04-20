@@ -2,6 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import { nextMatch } from "@/data/matches";
+import { withBase } from "@/lib/url";
 
 const settori = [
   {
@@ -129,7 +130,7 @@ const abbonamenti = [
               <p class="text-fumo mt-2 text-sm">{a.desc}</p>
               <p class="font-display text-5xl font-bold text-oro mt-6">{a.prezzo}</p>
               <p class="text-xs text-fumo mt-2">{a.nota}</p>
-              <a href="/contatti" class={`btn mt-6 justify-center ${a.highlight ? "btn-primary" : "btn-ghost"}`}>
+              <a href={withBase("/contatti")} class={`btn mt-6 justify-center ${a.highlight ? "btn-primary" : "btn-ghost"}`}>
                 Richiedi l'abbonamento
               </a>
             </article>
