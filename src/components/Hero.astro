@@ -18,6 +18,20 @@ const {
 ---
 
 <section class={`relative overflow-hidden ${variant === "home" ? "min-h-[78vh]" : "min-h-[44vh]"} bg-nero`}>
+  {variant === "home" && (
+    <picture>
+      <source srcset="/stadium-hero.webp" type="image/webp" />
+      <img
+        src="/stadium-hero.jpg"
+        alt=""
+        aria-hidden="true"
+        class="absolute inset-0 w-full h-full object-cover opacity-25 grayscale-[0.25]"
+      />
+    </picture>
+  )}
+  {variant === "home" && (
+    <div class="absolute inset-0 bg-gradient-to-t from-nero via-nero/85 to-nero/60"></div>
+  )}
   <div class="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--color-rosso)_0%,_transparent_55%)]"></div>
   <div class="absolute inset-y-0 right-0 w-1/2 opacity-10 bg-[radial-gradient(ellipse_at_right,_var(--color-oro)_0%,_transparent_60%)]"></div>
 
