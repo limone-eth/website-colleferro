@@ -41,7 +41,7 @@ const resolvedBg = bgImage;
 
   <div class="absolute -right-20 -top-20 w-[42rem] h-[42rem] rotate-12 stripe-diagonal opacity-[0.06]" aria-hidden="true"></div>
 
-  <picture class="hidden md:block absolute top-1/2 -translate-y-1/2 right-4 lg:right-16 pointer-events-none opacity-20">
+  <picture class="absolute top-1/2 -translate-y-1/2 -right-10 md:right-4 lg:right-16 pointer-events-none opacity-15 md:opacity-20">
     <source srcset="/logo.webp" type="image/webp" />
     <img
       src="/logo.png"
@@ -49,7 +49,7 @@ const resolvedBg = bgImage;
       aria-hidden="true"
       width="560"
       height="560"
-      class={`${variant === "home" ? "w-[28rem] lg:w-[36rem]" : "w-[20rem] lg:w-[26rem]"} h-auto`}
+      class={`${variant === "home" ? "w-64 md:w-[28rem] lg:w-[36rem]" : "w-48 md:w-[20rem] lg:w-[26rem]"} h-auto`}
     />
   </picture>
 
