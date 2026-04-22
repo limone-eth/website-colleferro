@@ -64,6 +64,32 @@ const me = readSession(Astro.cookies);
   {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
   {success && <p class="mb-4 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">{success}</p>}
 
+  {me && (
+    <form method="post" class="bg-grafite border border-oro/40 p-5 space-y-3 mb-8">
+      <input type="hidden" name="action" value="reset" />
+      <input type="hidden" name="id" value={me.userId} />
+      <div class="flex items-baseline justify-between gap-4 flex-wrap">
+        <h2 class="font-display text-lg text-panna">Il tuo profilo</h2>
+        <p class="text-fumo text-xs">La password iniziale da env viene usata solo al primo accesso. Dopo, vive nel database e la cambi da qui.</p>
+      </div>
+      <div class="grid sm:grid-cols-[1fr_auto] gap-3 items-end">
+        <label class="block">
+          <span class="font-display text-xs uppercase text-fumo block mb-1">Nuova password (min 8)</span>
+          <input
+            type="text"
+            name="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="nuova password"
+            class="w-full bg-nero border border-carbone px-3 py-2 text-panna font-mono focus:border-oro outline-none"
+          />
+        </label>
+        <button type="submit" class="btn btn-primary">Aggiorna la mia password</button>
+      </div>
+    </form>
+  )}
+
   <form method="post" class="bg-grafite border border-carbone p-5 space-y-3 mb-8">
     <input type="hidden" name="action" value="create" />
     <h2 class="font-display text-lg text-panna">Crea nuovo utente</h2>
