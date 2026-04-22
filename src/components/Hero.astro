@@ -42,14 +42,14 @@ const resolvedBg = bgImage;
   <div class="absolute -right-20 -top-20 w-[42rem] h-[42rem] rotate-12 stripe-diagonal opacity-[0.06]" aria-hidden="true"></div>
 
   <div class="relative max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28 flex flex-col justify-center min-h-[inherit]">
-    <picture>
+    <picture class="hidden md:block absolute top-10 right-5 lg:right-8 z-10 pointer-events-none">
       <source srcset="/logo.webp" type="image/webp" />
       <img
         src="/logo.png"
         alt=""
-        width="200"
-        height="200"
-        class={`${variant === "home" ? "w-32 md:w-40" : "w-24 md:w-28"} h-auto mb-6 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]`}
+        width="220"
+        height="220"
+        class={`${variant === "home" ? "w-40 lg:w-52" : "w-28 lg:w-36"} h-auto drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]`}
       />
     </picture>
     {eyebrow && (
