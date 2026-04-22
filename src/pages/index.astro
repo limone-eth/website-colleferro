@@ -26,7 +26,13 @@ const [nextMatch, lastResults, allNews, featuredNews, standings, sponsors] = awa
   getSponsors(season),
 ]);
 
-const topStandings = standings.slice(0, 8);
+const myRow = standings.find((r) => r.highlight);
+let topStandings = standings.slice(0, 8);
+if (myRow && !topStandings.some((r) => r.pos === myRow.pos)) {
+  topStandings = [...standings.slice(0, 7), myRow];
+}
+const myPosLabel = myRow ? `${myRow.pos}°` : "—";
+
 const latestNews = allNews.slice(0, 4);
 const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0, 3);
 ---
@@ -59,7 +65,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
     />
     <div class="grid lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2">
-        {nextMatch && (
+        {nextMatch ? (
           <MatchCard
             home={nextMatch.home}
             away={nextMatch.away}
@@ -71,6 +77,17 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
             status="upcoming"
             ticketUrl={nextMatch.ticketUrl}
           />
+        ) : (
+          <div class="bg-grafite border border-carbone p-10 md:p-12 h-full flex flex-col items-start justify-center">
+            <p class="font-display text-[0.7rem] tracking-[0.3em] uppercase text-oro mb-3">Calendario</p>
+            <h3 class="font-display text-2xl md:text-3xl text-panna mb-3 leading-tight">
+              Prossima partita in definizione
+            </h3>
+            <p class="text-fumo max-w-md leading-relaxed">
+              Stiamo aggiornando il calendario della stagione. Torna a breve per conoscere il prossimo impegno dei rossoneri.
+            </p>
+            <a href="/stagione" class="btn btn-ghost mt-6">Vedi il calendario</a>
+          </div>
         )}
       </div>
       <aside class="bg-grafite border border-carbone p-6 md:p-8">
@@ -82,6 +99,8 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
             lastResults.map((m) => (
               <li class="pb-4 border-b border-carbone last:border-b-0 last:pb-0">
                 <p class="text-[0.7rem] font-display tracking-[0.2em] uppercase text-fumo mb-1">
+                  {m.date}
+                  {m.matchday && <span class="text-carbone mx-1.5">·</span>}
                   {m.matchday}
                 </p>
                 <div class="flex items-center justify-between gap-3">
@@ -120,7 +139,7 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
             <p class="font-display text-xs tracking-[0.25em] uppercase text-oro mb-2">
               Posizione attuale
             </p>
-            <p class="font-display text-6xl md:text-7xl font-bold text-panna leading-none">4°</p>
+            <p class="font-display text-6xl md:text-7xl font-bold text-panna leading-none">{myPosLabel}</p>
             <p class="text-fumo mt-3 text-sm leading-relaxed">
               A tre giornate dal termine, la corsa playoff passa per il “Caslini”. Ogni partita è una finale.
             </p>
