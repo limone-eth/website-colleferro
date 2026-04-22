@@ -11,19 +11,21 @@ import Hero from "@/components/Hero.astro";
     eyebrow="Lo Stadio"
     title="Stadio Comunale “Caslini”"
     subtitle="La casa del Colleferro dal 1952. Un impianto storico, vissuto, che ogni domenica si riempie dei colori rossoneri."
+    bgImage={{ jpg: "/stadium-hero.jpg", webp: "/stadium-hero.webp" }}
   />
 
   <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24 grid lg:grid-cols-2 gap-12 items-start">
-    <div class="aspect-[4/3] bg-gradient-to-br from-rosso-deep via-carbone to-nero border border-carbone grid place-items-center">
-      <svg viewBox="0 0 200 140" class="w-full h-full p-6" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
-        <rect x="10" y="10" width="180" height="120" class="stroke-panna/20" />
-        <line x1="100" y1="10" x2="100" y2="130" class="stroke-panna/20" />
-        <circle cx="100" cy="70" r="18" class="stroke-panna/20" />
-        <rect x="10" y="45" width="30" height="50" class="stroke-panna/20" />
-        <rect x="160" y="45" width="30" height="50" class="stroke-panna/20" />
-        <rect x="10" y="60" width="10" height="20" class="stroke-oro" />
-        <rect x="180" y="60" width="10" height="20" class="stroke-oro" />
-      </svg>
+    <div class="aspect-[4/3] bg-grafite border border-carbone overflow-hidden">
+      <picture>
+        <source srcset="/stadium-hero.webp" type="image/webp" />
+        <img
+          src="/stadium-hero.jpg"
+          alt="Stadio Comunale Caslini, tribuna coperta e campo da gioco"
+          width="990"
+          height="543"
+          class="w-full h-full object-cover"
+        />
+      </picture>
     </div>
 
     <div>

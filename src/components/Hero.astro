@@ -18,9 +18,7 @@ const {
   bgImage,
 } = Astro.props;
 
-const resolvedBg = bgImage ?? (variant === "home"
-  ? { jpg: "/stadium-hero.jpg", webp: "/stadium-hero.webp" }
-  : undefined);
+const resolvedBg = bgImage;
 ---
 
 <section class={`relative overflow-hidden ${variant === "home" ? "min-h-[78vh]" : "min-h-[44vh]"} bg-nero`}>
