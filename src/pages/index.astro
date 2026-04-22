@@ -39,14 +39,14 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
 
 <BaseLayout
   title="A.S.D. Colleferro Calcio — Sito Ufficiale"
-  description="Casa del Colleferro Calcio. Segui prima squadra, calendario Eccellenza Lazio, news e biglietti per lo Stadio Caslini."
+  description="Casa del Colleferro Calcio. Segui prima squadra, calendario Eccellenza Lazio e news della squadra rossonera della Valle del Sacco."
 >
   <Hero
     eyebrow="Stagione 2025/26 · Eccellenza Lazio"
     title="Orgoglio rossonero. Cuore di Colleferro."
     subtitle="Dal 1925 la squadra della Valle del Sacco. Vivi ogni partita al “Caslini”, dal primo fischio all'ultimo applauso."
-    primaryCta={{ label: "Biglietti prossima partita", href: "/biglietteria" }}
-    secondaryCta={{ label: "Scopri la squadra", href: "/squadra/prima-squadra" }}
+    primaryCta={{ label: "Scopri la squadra", href: "/squadra/prima-squadra" }}
+    secondaryCta={{ label: "Calendario 2025/26", href: "/stagione" }}
     variant="home"
   >
     <span slot="title">
@@ -75,7 +75,6 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
             competition={nextMatch.competition}
             matchday={nextMatch.matchday}
             status="upcoming"
-            ticketUrl={nextMatch.ticketUrl}
           />
         ) : (
           <div class="bg-grafite border border-carbone p-10 md:p-12 h-full flex flex-col items-start justify-center">
@@ -141,10 +140,10 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
             </p>
             <p class="font-display text-6xl md:text-7xl font-bold text-panna leading-none">{myPosLabel}</p>
             <p class="text-fumo mt-3 text-sm leading-relaxed">
-              A tre giornate dal termine, la corsa playoff passa per il “Caslini”. Ogni partita è una finale.
+              Segui il cammino dei rossoneri in Eccellenza Lazio, girone B. Ogni partita è un passo.
             </p>
-            <a href="/biglietteria" class="btn btn-primary mt-5 w-full justify-center">
-              Sostieni la squadra
+            <a href="/stagione" class="btn btn-primary mt-5 w-full justify-center">
+              Classifica e calendario
             </a>
           </div>
         </aside>
@@ -243,25 +242,5 @@ const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0
       ctaHref="/sponsor"
     />
     <SponsorStrip sponsors={sponsors} />
-  </section>
-
-  <!-- CTA finale -->
-  <section class="bg-rosso text-panna">
-    <div class="max-w-7xl mx-auto px-5 lg:px-8 py-14 md:py-16 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div>
-        <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-2">
-          Abbonamento 2025/26
-        </p>
-        <h2 class="font-display text-3xl md:text-4xl font-bold leading-tight">
-          Un posto al “Caslini” è un posto in famiglia.
-        </h2>
-      </div>
-      <a href="/biglietteria" class="btn btn-oro text-base">
-        Richiedi l'abbonamento
-        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-          <path d="M5 12h14M13 5l7 7-7 7" stroke-linecap="square" />
-        </svg>
-      </a>
-    </div>
   </section>
 </BaseLayout>

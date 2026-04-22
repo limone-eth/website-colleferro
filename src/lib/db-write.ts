@@ -16,32 +16,31 @@ export type MatchInput = {
   status: "upcoming" | "live" | "finished";
   scoreHome?: number | null;
   scoreAway?: number | null;
-  ticketUrl?: string | null;
   kickoffTs: number;
 };
 
 export async function upsertMatch(m: MatchInput, existingId?: string) {
   if (existingId) {
     await db.execute({
-      sql: `UPDATE matches SET season=?, matchday=?, competition=?, date=?, date_long=?, time=?, home_name=?, home_short=?, away_name=?, away_short=?, venue=?, status=?, score_home=?, score_away=?, ticket_url=?, kickoff_ts=?, updated_at=unixepoch() WHERE id=?`,
+      sql: `UPDATE matches SET season=?, matchday=?, competition=?, date=?, date_long=?, time=?, home_name=?, home_short=?, away_name=?, away_short=?, venue=?, status=?, score_home=?, score_away=?, kickoff_ts=?, updated_at=unixepoch() WHERE id=?`,
       args: [
         m.season, m.matchday, m.competition, m.date, m.dateLong, m.time,
         m.homeName, m.homeShort, m.awayName, m.awayShort,
         m.venue, m.status,
         m.scoreHome ?? null, m.scoreAway ?? null,
-        m.ticketUrl ?? null, m.kickoffTs,
+        m.kickoffTs,
         existingId,
       ],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO matches (id, season, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, ticket_url, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      sql: `INSERT INTO matches (id, season, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [
         m.id, m.season, m.matchday, m.competition, m.date, m.dateLong, m.time,
         m.homeName, m.homeShort, m.awayName, m.awayShort,
         m.venue, m.status,
         m.scoreHome ?? null, m.scoreAway ?? null,
-        m.ticketUrl ?? null, m.kickoffTs,
+        m.kickoffTs,
       ],
     });
   }

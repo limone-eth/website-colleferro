@@ -20,7 +20,6 @@ export type Match = {
   venue: string;
   status: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };
-  ticketUrl?: string;
   kickoffTs: number;
 };
 
@@ -99,7 +98,6 @@ const rowToMatch = (r: Record<string, unknown>): Match => ({
   score: r.score_home != null && r.score_away != null
     ? { home: Number(r.score_home), away: Number(r.score_away) }
     : undefined,
-  ticketUrl: (r.ticket_url as string | null) ?? undefined,
   kickoffTs: Number(r.kickoff_ts),
 });
 

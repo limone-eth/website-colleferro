@@ -60,7 +60,6 @@ if (Astro.request.method === "POST") {
       status: String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished",
       scoreHome: f.get("scoreHome") ? Number(f.get("scoreHome")) : null,
       scoreAway: f.get("scoreAway") ? Number(f.get("scoreAway")) : null,
-      ticketUrl: (f.get("ticketUrl") as string) || null,
       kickoffTs: fields.kickoffTs,
     }, id);
     return Astro.redirect("/admin/matches");
@@ -84,7 +83,6 @@ const match: Match = {
   score: r.score_home != null && r.score_away != null
     ? { home: Number(r.score_home), away: Number(r.score_away) }
     : undefined,
-  ticketUrl: (r.ticket_url as string | null) ?? undefined,
   kickoffTs: Number(r.kickoff_ts),
 };
 

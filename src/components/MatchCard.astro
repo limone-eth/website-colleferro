@@ -13,7 +13,6 @@ interface Props {
   matchday: string;
   status?: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };
-  ticketUrl?: string;
 }
 const {
   home,
@@ -25,7 +24,6 @@ const {
   matchday,
   status = "upcoming",
   score,
-  ticketUrl,
 } = Astro.props;
 ---
 
@@ -81,7 +79,7 @@ const {
       </div>
     </div>
 
-    <div class="mt-6 pt-5 border-t border-carbone flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div class="mt-6 pt-5 border-t border-carbone">
       <p class="text-sm text-fumo">
         <svg class="inline w-4 h-4 mr-1 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M12 2a7 7 0 017 7c0 5-7 13-7 13S5 14 5 9a7 7 0 017-7z" />
@@ -89,11 +87,6 @@ const {
         </svg>
         {venue}
       </p>
-      {ticketUrl && status === "upcoming" && (
-        <a href={ticketUrl} class="btn btn-oro text-sm">
-          Acquista biglietti
-        </a>
-      )}
     </div>
   </div>
 </article>

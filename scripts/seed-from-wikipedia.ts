@@ -127,7 +127,7 @@ async function run() {
     const id = `m-${String(i + 1).padStart(2, "0")}`;
     const venue = m.home === "Colleferro" ? 'Stadio Comunale "Andrea Caslini"' : `Stadio ${m.home}`;
     await db.execute({
-      sql: `INSERT INTO matches (id, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, ticket_url, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      sql: `INSERT INTO matches (id, matchday, competition, date, date_long, time, home_name, home_short, away_name, away_short, venue, status, score_home, score_away, kickoff_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [
         id,
         `${i + 1}ª Giornata (*)`,
@@ -138,7 +138,6 @@ async function run() {
         venue,
         "finished",
         m.homeGoals, m.awayGoals,
-        null,
         kickoffTs,
       ],
     });
