@@ -1,6 +1,7 @@
 ---
 import "@/styles/global.css";
 import { getAllSeasons, resolveAdminSeason } from "@/lib/season";
+import { readSession, getUserById } from "@/lib/auth";
 
 interface Props {
   title: string;
@@ -10,6 +11,9 @@ const { title, current } = Astro.props;
 
 const seasons = await getAllSeasons();
 const activeSeason = await resolveAdminSeason(Astro.cookies);
+const session = readSession(Astro.cookies);
+const currentUser = session ? await getUserById(session.userId) : null;
+const isAdmin = session?.role === "admin";
 
 const nav = [
   { href: "/admin", label: "Dashboard", key: "home" },
@@ -19,6 +23,7 @@ const nav = [
   { href: "/admin/staff", label: "Staff", key: "staff" },
   { href: "/admin/sponsors", label: "Sponsor", key: "sponsors" },
   { href: "/admin/seasons", label: "Stagioni", key: "seasons" },
+  ...(isAdmin ? [{ href: "/admin/users", label: "Utenti", key: "users" }] : []),
 ];
 ---
 
@@ -63,7 +68,13 @@ const nav = [
             ))}
           </select>
         </form>
-        <form method="post" action="/admin/logout">
+        <form method="post" action="/admin/logout" class="flex items-center gap-3">
+          {currentUser && (
+            <span class="hidden md:inline text-fumo text-xs font-display tracking-wider">
+              <span class="text-panna">{currentUser.email}</span>
+              <span class="text-oro ml-1">· {currentUser.role}</span>
+            </span>
+          )}
           <button type="submit" class="btn btn-ghost text-xs">Esci</button>
         </form>
       </div>

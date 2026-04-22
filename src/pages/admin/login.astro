@@ -1,21 +1,40 @@
 ---
 import "@/styles/global.css";
-import { verifyPassword, issueSession, isAuthenticated } from "@/lib/auth";
+import {
+  getUserByEmail,
+  verifyPasswordHash,
+  issueSession,
+  isAuthenticated,
+  tryBootstrapAdmin,
+} from "@/lib/auth";
 
 if (isAuthenticated(Astro.cookies)) {
   return Astro.redirect("/admin");
 }
 
 let error: string | null = null;
+let email = "";
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
+  email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (verifyPassword(password)) {
-    issueSession(Astro.cookies);
-    return Astro.redirect("/admin");
+
+  if (email && password) {
+    const user = await getUserByEmail(email);
+    if (user && (await verifyPasswordHash(password, user.passwordHash))) {
+      issueSession(Astro.cookies, user.id, user.role);
+      return Astro.redirect("/admin");
+    }
+    if (!user) {
+      const seeded = await tryBootstrapAdmin(email, password);
+      if (seeded) {
+        issueSession(Astro.cookies, seeded.id, seeded.role);
+        return Astro.redirect("/admin");
+      }
+    }
   }
-  error = "Password non valida";
+  error = "Credenziali non valide";
 }
 ---
 
@@ -39,12 +58,24 @@ if (Astro.request.method === "POST") {
         <p class="text-sm text-rosso mb-4 border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>
       )}
       <label class="block mb-4">
+        <span class="font-display text-xs tracking-wider uppercase text-fumo block mb-2">Email</span>
+        <input
+          type="email"
+          name="email"
+          required
+          autofocus
+          value={email}
+          autocomplete="username"
+          class="w-full bg-nero border border-carbone px-3 py-2.5 text-panna focus:border-oro outline-none"
+        />
+      </label>
+      <label class="block mb-4">
         <span class="font-display text-xs tracking-wider uppercase text-fumo block mb-2">Password</span>
         <input
           type="password"
           name="password"
           required
-          autofocus
+          autocomplete="current-password"
           class="w-full bg-nero border border-carbone px-3 py-2.5 text-panna focus:border-oro outline-none"
         />
       </label>

@@ -1,0 +1,131 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import {
+  requireRole,
+  listUsers,
+  createUser,
+  deleteUser,
+  updateUserPassword,
+  getUserByEmail,
+  readSession,
+} from "@/lib/auth";
+
+const guard = requireRole(Astro, "admin");
+if (guard) return guard;
+
+let error: string | undefined;
+let success: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = String(f.get("action") ?? "");
+  try {
+    if (action === "create") {
+      const email = String(f.get("email") ?? "").trim();
+      const password = String(f.get("password") ?? "");
+      const role = String(f.get("role") ?? "member");
+      if (!email) throw new Error("Email richiesta.");
+      if (password.length < 8) throw new Error("La password deve avere almeno 8 caratteri.");
+      if (role !== "admin" && role !== "member") throw new Error("Ruolo non valido.");
+      if (await getUserByEmail(email)) throw new Error("Email già registrata.");
+      await createUser(email, password, role);
+      success = `Utente ${email.toLowerCase().trim()} creato.`;
+    } else if (action === "reset") {
+      const id = Number(f.get("id"));
+      const password = String(f.get("password") ?? "");
+      if (!id) throw new Error("ID utente mancante.");
+      if (password.length < 8) throw new Error("La password deve avere almeno 8 caratteri.");
+      await updateUserPassword(id, password);
+      success = "Password aggiornata.";
+    } else if (action === "delete") {
+      const id = Number(f.get("id"));
+      if (!id) throw new Error("ID utente mancante.");
+      const me = readSession(Astro.cookies);
+      if (me?.userId === id) throw new Error("Non puoi eliminare il tuo account.");
+      await deleteUser(id);
+      success = "Utente eliminato.";
+    }
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const users = await listUsers();
+const me = readSession(Astro.cookies);
+---
+
+<AdminLayout title="Utenti" current="users">
+  <div class="mb-6 border-b border-carbone pb-4">
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Utenti</p>
+    <h1 class="font-display text-2xl text-panna">Gestione accessi</h1>
+    <p class="text-fumo text-xs mt-2">Gli utenti <span class="text-panna">admin</span> gestiscono accessi e contenuti. Gli utenti <span class="text-panna">member</span> possono solo modificare i contenuti. L'invito va comunicato manualmente.</p>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+  {success && <p class="mb-4 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">{success}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-5 space-y-3 mb-8">
+    <input type="hidden" name="action" value="create" />
+    <h2 class="font-display text-lg text-panna">Crea nuovo utente</h2>
+    <div class="grid md:grid-cols-3 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Email</span>
+        <input type="email" name="email" required autocomplete="off" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Password (min 8)</span>
+        <input type="text" name="password" required minlength="8" autocomplete="off" class="w-full bg-nero border border-carbone px-3 py-2 text-panna font-mono" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Ruolo</span>
+        <select name="role" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+          <option value="member" selected>Member (solo contenuti)</option>
+          <option value="admin">Admin (contenuti + utenti)</option>
+        </select>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary">Crea utente</button>
+  </form>
+
+  <h2 class="font-display text-lg text-panna mb-3">Utenti registrati</h2>
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4">Email</th>
+        <th class="py-3 pr-4">Ruolo</th>
+        <th class="py-3 pr-4">Reset password</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {users.map((u) => (
+        <tr class="border-b border-carbone/60 align-middle">
+          <td class="py-3 pr-4 text-panna">
+            {u.email}
+            {me?.userId === u.id && <span class="text-oro text-xs ml-2">(tu)</span>}
+          </td>
+          <td class="py-3 pr-4">
+            <span class={u.role === "admin" ? "text-oro" : "text-panna"}>{u.role}</span>
+          </td>
+          <td class="py-3 pr-4">
+            <form method="post" class="flex gap-2">
+              <input type="hidden" name="action" value="reset" />
+              <input type="hidden" name="id" value={u.id} />
+              <input type="text" name="password" minlength="8" placeholder="nuova password" autocomplete="off" class="bg-nero border border-carbone px-2 py-1 text-panna text-xs font-mono w-40" />
+              <button type="submit" class="btn btn-ghost text-xs">Aggiorna</button>
+            </form>
+          </td>
+          <td class="py-3 text-right">
+            {me?.userId !== u.id && (
+              <form method="post" class="inline" onsubmit="return confirm('Eliminare questo utente?')">
+                <input type="hidden" name="action" value="delete" />
+                <input type="hidden" name="id" value={u.id} />
+                <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+              </form>
+            )}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>
