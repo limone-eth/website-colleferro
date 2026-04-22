@@ -11,8 +11,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     path.startsWith("/api/") ||
     path.startsWith("/_") ||
     path === "/manutenzione" ||
-    path === "/favicon.svg" ||
-    path === "/robots.txt"
+    path === "/robots.txt" ||
+    path.startsWith("/favicon") ||
+    path === "/logo.webp" ||
+    path === "/logo.png"
   ) {
     return next();
   }

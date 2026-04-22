@@ -33,11 +33,16 @@ const isActive = (href: string) =>
   <div class="max-w-7xl mx-auto px-5 lg:px-8">
     <div class="flex items-center justify-between h-16 lg:h-20 gap-6">
       <a href="/" class="flex items-center gap-3 group" aria-label="Colleferro Calcio — Home">
-        <span class="w-10 h-10 lg:w-11 lg:h-11 grid place-items-center bg-rosso">
-          <svg viewBox="0 0 32 32" class="w-6 h-6 fill-oro" aria-hidden="true">
-            <path d="M16 4l3 6.2 6.8 1-5 4.8 1.2 6.8L16 19.6 10 22.8l1.2-6.8-5-4.8 6.8-1L16 4z" />
-          </svg>
-        </span>
+        <picture>
+          <source srcset="/logo.webp" type="image/webp" />
+          <img
+            src="/logo.png"
+            alt=""
+            width="56"
+            height="56"
+            class="w-12 h-12 lg:w-14 lg:h-14 object-contain"
+          />
+        </picture>
         <span class="font-display text-panna leading-none">
           <span class="block text-[0.65rem] tracking-[0.2em] text-fumo uppercase">A.S.D.</span>
           <span class="block text-lg lg:text-xl tracking-wide">Colleferro Calcio</span>
