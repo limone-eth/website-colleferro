@@ -1,11 +1,27 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, readSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
+import { isMaintenanceMode, setMaintenanceMode } from "@/lib/settings";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
+
+const session = readSession(Astro.cookies);
+const isAdmin = session?.role === "admin";
+
+let notice: string | undefined;
+if (Astro.request.method === "POST" && isAdmin) {
+  const f = await Astro.request.formData();
+  if (String(f.get("action")) === "toggle-maintenance") {
+    const enable = String(f.get("enable")) === "1";
+    await setMaintenanceMode(enable);
+    notice = enable
+      ? "Sito pubblico in manutenzione."
+      : "Sito pubblico riattivato.";
+  }
+}
 
 const season = await resolveAdminSeason(Astro.cookies);
 
@@ -24,11 +40,15 @@ const tiles = [
   { href: "/admin/staff", label: "Staff", count: counts[3], hint: "Staff tecnico, medico, dirigenza" },
   { href: "/admin/sponsors", label: "Sponsor", count: counts[4], hint: "Partner del club" },
 ];
+
+const maintenance = isAdmin ? await isMaintenanceMode() : false;
 ---
 
 <AdminLayout title="Dashboard" current="home">
   <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-2">Dashboard · Stagione {formatSeason(season)}</p>
   <h1 class="font-display text-3xl text-panna mb-8">Gestione contenuti</h1>
+
+  {notice && <p class="mb-6 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">{notice}</p>}
 
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {tiles.map((t) => (
@@ -44,4 +64,34 @@ const tiles = [
       </a>
     ))}
   </div>
+
+  {isAdmin && (
+    <section class="mt-10 bg-grafite border border-carbone p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Sito pubblico</p>
+          <h2 class="font-display text-lg text-panna mb-1">
+            Modalità manutenzione {maintenance ? (
+              <span class="text-rosso">· attiva</span>
+            ) : (
+              <span class="text-fumo">· spenta</span>
+            )}
+          </h2>
+          <p class="text-fumo text-sm max-w-xl">
+            Quando attiva, i visitatori vedono una pagina "coming soon". L'area admin resta sempre raggiungibile e gli utenti loggati continuano a vedere il sito normalmente.
+          </p>
+        </div>
+        <form method="post" class="shrink-0">
+          <input type="hidden" name="action" value="toggle-maintenance" />
+          <input type="hidden" name="enable" value={maintenance ? "0" : "1"} />
+          <button
+            type="submit"
+            class={`btn ${maintenance ? "btn-ghost" : "btn-primary"}`}
+          >
+            {maintenance ? "Disattiva manutenzione" : "Attiva manutenzione"}
+          </button>
+        </form>
+      </div>
+    </section>
+  )}
 </AdminLayout>

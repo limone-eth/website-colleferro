@@ -1,0 +1,52 @@
+---
+import "@/styles/global.css";
+
+Astro.response.headers.set("Cache-Control", "no-store");
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>In manutenzione — A.S.D. Colleferro Calcio</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-nero text-panna font-sans antialiased min-h-screen">
+    <div class="stripe-diagonal h-1"></div>
+    <main class="min-h-[calc(100vh-0.25rem)] grid place-items-center px-5 py-16">
+      <div class="max-w-xl w-full text-center">
+        <picture>
+          <source srcset="/logo.webp" type="image/webp" />
+          <img
+            src="/logo.png"
+            alt="SSD Colleferro Calcio 1937"
+            width="240"
+            height="240"
+            class="w-48 sm:w-56 h-auto mx-auto mb-10 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+          />
+        </picture>
+
+        <p class="font-display text-[0.7rem] tracking-[0.3em] uppercase text-oro mb-4">Sito in manutenzione</p>
+        <h1 class="font-display text-4xl sm:text-5xl text-panna mb-6 leading-tight">
+          Stiamo preparando<br />qualcosa di nuovo.
+        </h1>
+        <p class="text-fumo text-base sm:text-lg leading-relaxed max-w-md mx-auto">
+          Il sito ufficiale dell'A.S.D. Colleferro Calcio tornerà online a breve. Grazie per la pazienza — forza rosso-nero.
+        </p>
+
+        <div class="mt-12 pt-8 border-t border-carbone">
+          <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-fumo mb-3">Contatti</p>
+          <p class="text-panna text-sm">
+            <a href="mailto:info@colleferrocalcio.it" class="hover:text-oro transition-colors">info@colleferrocalcio.it</a>
+          </p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
