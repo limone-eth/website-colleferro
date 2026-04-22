@@ -6,6 +6,7 @@ interface Props {
   primaryCta?: { label: string; href: string };
   secondaryCta?: { label: string; href: string };
   variant?: "home" | "page";
+  bgImage?: { jpg: string; webp?: string };
 }
 const {
   eyebrow,
@@ -14,22 +15,27 @@ const {
   primaryCta,
   secondaryCta,
   variant = "page",
+  bgImage,
 } = Astro.props;
+
+const resolvedBg = bgImage ?? (variant === "home"
+  ? { jpg: "/stadium-hero.jpg", webp: "/stadium-hero.webp" }
+  : undefined);
 ---
 
 <section class={`relative overflow-hidden ${variant === "home" ? "min-h-[78vh]" : "min-h-[44vh]"} bg-nero`}>
-  {variant === "home" && (
+  {resolvedBg && (
     <picture>
-      <source srcset="/stadium-hero.webp" type="image/webp" />
+      {resolvedBg.webp && <source srcset={resolvedBg.webp} type="image/webp" />}
       <img
-        src="/stadium-hero.jpg"
+        src={resolvedBg.jpg}
         alt=""
         aria-hidden="true"
         class="absolute inset-0 w-full h-full object-cover opacity-55"
       />
     </picture>
   )}
-  {variant === "home" && (
+  {resolvedBg && (
     <div class="absolute inset-0 bg-gradient-to-t from-nero via-nero/60 to-nero/20"></div>
   )}
   <div class="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--color-rosso)_0%,_transparent_55%)]"></div>
