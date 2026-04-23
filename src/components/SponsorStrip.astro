@@ -12,33 +12,38 @@ interface Props {
 }
 const { sponsors, variant = "strip" } = Astro.props;
 const optimized = (u?: string) => CLD.sponsorLogo(u);
+const loop = variant === "strip" ? [...sponsors, ...sponsors] : sponsors;
 ---
 
 {
   variant === "strip" ? (
-    <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
-      {sponsors.map((s) => (
-        <a
-          href={s.url || "#"}
-          class="group flex flex-col items-center gap-2 text-fumo hover:text-panna transition-colors"
-        >
-          <span class="font-display text-[0.6rem] tracking-[0.25em] uppercase text-fumo/70">
-            {s.tier}
-          </span>
-          {s.logoUrl ? (
-            <img
-              src={optimized(s.logoUrl)}
-              alt={s.name}
-              loading="lazy"
-              class="h-12 md:h-14 w-auto object-contain grayscale group-hover:grayscale-0 transition-all"
-            />
-          ) : (
-            <span class="font-display text-xl md:text-2xl tracking-wide grayscale group-hover:grayscale-0">
-              {s.name}
+    <div class="sponsor-marquee group relative overflow-hidden">
+      <div class="sponsor-track flex w-max items-center">
+        {loop.map((s, i) => (
+          <a
+            href={s.url || "#"}
+            aria-hidden={i >= sponsors.length ? "true" : undefined}
+            tabindex={i >= sponsors.length ? -1 : undefined}
+            class="group/item mr-12 md:mr-16 flex shrink-0 flex-col items-center gap-2 text-fumo hover:text-panna transition-colors"
+          >
+            <span class="font-display text-[0.6rem] tracking-[0.25em] uppercase text-fumo/70">
+              {s.tier}
             </span>
-          )}
-        </a>
-      ))}
+            {s.logoUrl ? (
+              <img
+                src={optimized(s.logoUrl)}
+                alt={s.name}
+                loading="lazy"
+                class="h-12 md:h-14 w-auto object-contain grayscale group-hover/item:grayscale-0 transition-all"
+              />
+            ) : (
+              <span class="font-display text-xl md:text-2xl tracking-wide grayscale group-hover/item:grayscale-0 whitespace-nowrap">
+                {s.name}
+              </span>
+            )}
+          </a>
+        ))}
+      </div>
     </div>
   ) : (
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -67,3 +72,46 @@ const optimized = (u?: string) => CLD.sponsorLogo(u);
     </div>
   )
 }
+
+<style>
+  .sponsor-marquee {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+
+  .sponsor-track {
+    animation: sponsor-marquee 40s linear infinite;
+    will-change: transform;
+  }
+
+  .sponsor-marquee:hover .sponsor-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes sponsor-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sponsor-track {
+      animation: none;
+    }
+  }
+</style>
