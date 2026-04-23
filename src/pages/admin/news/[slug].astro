@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import NewsForm from "@/components/admin/NewsForm.astro";
+import ShareFacebook from "@/components/ShareFacebook.astro";
 import { requireAdmin } from "@/lib/auth";
 import { getNewsBySlug } from "@/lib/db";
 import { upsertNews } from "@/lib/db-write";
@@ -36,9 +37,19 @@ if (Astro.request.method === "POST") {
 
 const post = await getNewsBySlug(slug);
 if (!post) return new Response("Articolo non trovato", { status: 404 });
+
+const shareUrl = new URL(`/news/${post.slug}`, Astro.site ?? Astro.url.origin).toString();
 ---
 
 <AdminLayout title="Modifica articolo" current="news">
   <h1 class="font-display text-2xl text-panna mb-6">Modifica articolo</h1>
   <NewsForm action={`/admin/news/${slug}`} post={post} error={error} />
+
+  <div class="mt-8 pt-6 border-t border-carbone flex flex-wrap items-center gap-3">
+    <span class="font-display text-xs uppercase tracking-[0.2em] text-fumo">Condividi l'articolo</span>
+    <ShareFacebook url={shareUrl} />
+    <a href={`/news/${post.slug}`} target="_blank" rel="noopener noreferrer" class="btn btn-ghost text-sm">
+      Apri pagina pubblica
+    </a>
+  </div>
 </AdminLayout>

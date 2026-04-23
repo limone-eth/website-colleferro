@@ -1,9 +1,11 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import NewsCard from "@/components/NewsCard.astro";
+import ShareFacebook from "@/components/ShareFacebook.astro";
 import { getNewsBySlug, getAllNews } from "@/lib/db";
 import { sanitizeArticleHtml } from "@/lib/sanitize";
-import { rewriteArticleImages } from "@/lib/cloudinary";
+import { rewriteArticleImages, CLD } from "@/lib/cloudinary";
+import { SITE, absoluteUrl, firstImageFromHtml, toIsoDate, jsonLdString } from "@/lib/seo";
 
 const { slug } = Astro.params;
 if (!slug) return Astro.redirect("/news");
@@ -13,9 +15,53 @@ if (!post) return new Response("Not found", { status: 404 });
 
 const all = await getAllNews();
 const related = all.filter((n) => n.slug !== post.slug).slice(0, 3);
+
+const base = Astro.site ?? Astro.url;
+const shareUrl = absoluteUrl(`/news/${post.slug}`, base);
+
+const bodyImage = firstImageFromHtml(post.body);
+const ogImageRaw = bodyImage ? (CLD.articleInline(bodyImage) ?? bodyImage) : SITE.defaultOgImagePath;
+const ogImageAbs = /^https?:\/\//i.test(ogImageRaw) ? ogImageRaw : absoluteUrl(ogImageRaw, base);
+
+const publishedTime = toIsoDate(post.dateIso);
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  mainEntityOfPage: { "@type": "WebPage", "@id": shareUrl },
+  headline: post.title,
+  description: post.excerpt,
+  image: [ogImageAbs],
+  datePublished: publishedTime,
+  dateModified: publishedTime,
+  author: { "@type": "Person", name: post.author },
+  articleSection: post.category,
+  publisher: {
+    "@type": "Organization",
+    name: SITE.name,
+    logo: {
+      "@type": "ImageObject",
+      url: absoluteUrl(SITE.logoPath, base),
+    },
+  },
+  inLanguage: "it-IT",
+};
 ---
 
-<BaseLayout title={`${post.title} — Colleferro Calcio`} description={post.excerpt}>
+<BaseLayout
+  title={`${post.title} — Colleferro Calcio`}
+  description={post.excerpt}
+  ogImage={ogImageAbs}
+  ogType="article"
+  canonical={shareUrl}
+  article={{
+    publishedTime,
+    modifiedTime: publishedTime,
+    author: post.author,
+    section: post.category,
+  }}
+>
+  <script type="application/ld+json" slot="jsonld" set:html={jsonLdString(jsonLd)} />
   <article class="bg-nero">
     <header class="relative overflow-hidden border-b border-carbone">
       <div class="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_left,_var(--color-rosso)_0%,_transparent_55%)]"></div>
@@ -54,9 +100,7 @@ const related = all.filter((n) => n.slug !== post.slug).slice(0, 3);
           Altre news
         </a>
         <div class="flex gap-2">
-          <a href="#" class="btn btn-ghost text-sm" aria-label="Condividi su Facebook">FB</a>
-          <a href="#" class="btn btn-ghost text-sm" aria-label="Condividi su X">X</a>
-          <a href="#" class="btn btn-ghost text-sm" aria-label="Condividi su WhatsApp">WA</a>
+          <ShareFacebook url={shareUrl} />
         </div>
       </div>
     </div>

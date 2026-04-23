@@ -15,6 +15,7 @@ import {
   getSponsors,
 } from "@/lib/db";
 import { getCurrentSeasonYear } from "@/lib/season";
+import { SITE, absoluteUrl, jsonLdString } from "@/lib/seo";
 
 const season = await getCurrentSeasonYear();
 const [nextMatch, lastResults, allNews, featuredNews, standings, sponsors] = await Promise.all([
@@ -35,12 +36,48 @@ const myPosLabel = myRow ? `${myRow.pos}°` : "—";
 
 const latestNews = allNews.slice(0, 4);
 const sideNews = latestNews.filter((n) => n.slug !== featuredNews?.slug).slice(0, 3);
+
+const siteBase = Astro.site ?? Astro.url;
+const homeUrl = absoluteUrl("/", siteBase);
+const logoUrl = absoluteUrl(SITE.logoPath, siteBase);
+
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SportsOrganization",
+  name: SITE.name,
+  alternateName: SITE.shortName,
+  legalName: SITE.legalName,
+  sport: "Soccer",
+  foundingDate: SITE.foundingYear,
+  url: homeUrl,
+  logo: logoUrl,
+  location: {
+    "@type": "StadiumOrArena",
+    name: SITE.stadium.name,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: SITE.stadium.addressLocality,
+      addressRegion: SITE.stadium.addressRegion,
+      addressCountry: SITE.stadium.addressCountry,
+    },
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE.name,
+  url: homeUrl,
+  inLanguage: "it-IT",
+};
 ---
 
 <BaseLayout
   title="A.S.D. Colleferro Calcio — Sito Ufficiale"
   description="Casa del Colleferro Calcio. Segui prima squadra, calendario Eccellenza Lazio e news della squadra rossonera della Valle del Sacco."
 >
+  <script type="application/ld+json" slot="jsonld" set:html={jsonLdString(orgJsonLd)} />
+  <script type="application/ld+json" slot="jsonld" set:html={jsonLdString(websiteJsonLd)} />
   <Hero
     eyebrow="Stagione 2025/26 · Eccellenza Lazio"
     title="Orgoglio rossonero. Cuore di Colleferro."
