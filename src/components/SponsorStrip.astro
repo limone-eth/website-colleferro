@@ -34,10 +34,10 @@ const loop = variant === "strip" ? [...sponsors, ...sponsors] : sponsors;
                 src={optimized(s.logoUrl)}
                 alt={s.name}
                 loading="lazy"
-                class="h-12 md:h-14 w-auto object-contain grayscale group-hover/item:grayscale-0 transition-all"
+                class="h-12 md:h-14 w-auto object-contain"
               />
             ) : (
-              <span class="font-display text-xl md:text-2xl tracking-wide grayscale group-hover/item:grayscale-0 whitespace-nowrap">
+              <span class="font-display text-xl md:text-2xl tracking-wide whitespace-nowrap">
                 {s.name}
               </span>
             )}
