@@ -56,6 +56,15 @@ export function parseMatchdayNumber(label: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+const SHORT_MONTHS_TITLE = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+
+// "2026-04-14" -> "14 Apr 2026"
+export function newsDateFromIso(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return `${d} ${SHORT_MONTHS_TITLE[m - 1]} ${y}`;
+}
+
 // ISO "YYYY-MM-DD" from kickoff_ts (UTC) — for <input type="date"> pre-fill
 export function ymdFromKickoff(ts: number): string {
   const d = new Date(ts * 1000);

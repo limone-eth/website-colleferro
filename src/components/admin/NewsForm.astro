@@ -27,12 +27,8 @@ const categories = ["Prima Squadra", "Società", "Giovanili", "Partner"];
       <textarea name="excerpt" required rows="2" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">{post?.excerpt ?? ""}</textarea>
     </label>
     <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Data (es. 14 Apr 2026)</span>
-      <input name="date" required value={post?.date ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
-    </label>
-    <label class="block">
-      <span class="font-display text-xs uppercase text-fumo block mb-2">Data ISO (YYYY-MM-DD)</span>
-      <input name="dateIso" required value={post?.dateIso ?? ""} pattern="\d{4}-\d{2}-\d{2}" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Data pubblicazione</span>
+      <input type="date" name="dateIso" required value={post?.dateIso ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <label class="block">
       <span class="font-display text-xs uppercase text-fumo block mb-2">Categoria</span>

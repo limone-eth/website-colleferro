@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getNewsBySlug } from "@/lib/db";
 import { upsertNews } from "@/lib/db-write";
 import { sanitizeArticleHtml } from "@/lib/sanitize";
+import { newsDateFromIso } from "@/lib/match-utils";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -18,12 +19,13 @@ let error: string | undefined;
 if (Astro.request.method === "POST") {
   const f = await Astro.request.formData();
   try {
+    const dateIso = String(f.get("dateIso") ?? "");
     await upsertNews({
       slug: String(f.get("slug") ?? "").trim(),
       title: String(f.get("title") ?? ""),
       excerpt: String(f.get("excerpt") ?? ""),
-      date: String(f.get("date") ?? ""),
-      dateIso: String(f.get("dateIso") ?? ""),
+      date: newsDateFromIso(dateIso),
+      dateIso,
       category: String(f.get("category") ?? ""),
       author: String(f.get("author") ?? ""),
       body: sanitizeArticleHtml(String(f.get("body") ?? "")),
