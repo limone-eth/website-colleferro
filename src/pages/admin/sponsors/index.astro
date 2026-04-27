@@ -76,10 +76,10 @@ const tiers = ["Main", "Technical", "Official", "Local"] as const;
         name="logoUrl"
         folder="colleferro/sponsors"
         label="Logo (opzionale)"
-        hint="orizzontale (largh ≥ 1,5× altezza) · png/svg con trasparenza · max 2MB"
+        hint="orizzontale · consigliato 2:1 (16:9 o più largo) · png/svg/webp (trasparenza consigliata) o jpg · max 2MB"
         formats={IMAGE_RULES.sponsorLogo.allowedFormats}
         maxBytes={IMAGE_RULES.sponsorLogo.maxBytes}
-        cropMinAspectRatio={1.5}
+        cropMinAspectRatio={1.75}
       />
     </div>
     <div class="md:col-span-5">

@@ -151,7 +151,7 @@ export const IMAGE_RULES = {
   sponsorLogo: {
     allowedFormats: ["png", "webp", "svg", "jpg", "jpeg"] as const,
     maxBytes: 2_000_000,
-    aspectRatio: { type: "min", ratio: 1.5, label: "logo orizzontale (largh ≥ 1,5× altezza)" } as AspectRatioRule,
+    aspectRatio: { type: "min", ratio: 1.75, label: "logo orizzontale (consigliato 2:1, minimo 16:9)" } as AspectRatioRule,
   },
   playerPhoto: {
     allowedFormats: ["jpg", "jpeg", "png", "webp", "avif"] as const,

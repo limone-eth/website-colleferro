@@ -58,7 +58,7 @@ if (Astro.request.method === "POST") {
         value={(r.crest_url as string | null) ?? ""}
         folder="colleferro/teams"
         label="Stemma squadra"
-        hint="quadrato 1:1 · png/svg con sfondo trasparente · max 2MB"
+        hint="quadrato 1:1 · png/svg/webp (trasparenza consigliata) o jpg · max 2MB"
         formats={IMAGE_RULES.teamCrest.allowedFormats}
         maxBytes={IMAGE_RULES.teamCrest.maxBytes}
         cropAspectRatio={1}
