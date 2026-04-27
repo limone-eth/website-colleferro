@@ -3,6 +3,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import { getStaff } from "@/lib/db";
 import { getCurrentSeasonYear } from "@/lib/season";
+import { CLD } from "@/lib/cloudinary";
 
 const staff = await getStaff(await getCurrentSeasonYear());
 
@@ -40,17 +41,26 @@ const labels: Record<(typeof groups)[number], string> = {
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((m) => (
-                <article class="bg-grafite border border-carbone hover:border-rosso/60 transition-colors p-5 flex items-center gap-4">
-                  <div class="w-14 h-14 bg-nero border border-fumo/20 grid place-items-center">
-                    <svg viewBox="0 0 24 24" class="w-7 h-7 text-panna/40" fill="currentColor" aria-hidden="true">
-                      <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z" />
-                    </svg>
+                <article class="bg-grafite border border-carbone hover:border-rosso/60 transition-colors p-4 flex items-center gap-4">
+                  <div class="w-16 aspect-[3/4] bg-nero border border-fumo/20 overflow-hidden grid place-items-center shrink-0">
+                    {m.photoUrl ? (
+                      <img
+                        src={CLD.staffPortrait(m.photoUrl)}
+                        alt={m.name}
+                        loading="lazy"
+                        class="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <svg viewBox="0 0 24 24" class="w-7 h-7 text-panna/40" fill="currentColor" aria-hidden="true">
+                        <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z" />
+                      </svg>
+                    )}
                   </div>
-                  <div>
+                  <div class="min-w-0">
                     <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-rosso">
                       {m.role}
                     </p>
-                    <h3 class="font-display text-lg text-panna leading-tight mt-1">
+                    <h3 class="font-display text-lg text-panna leading-tight mt-1 truncate">
                       {m.name}
                     </h3>
                   </div>

@@ -4,6 +4,9 @@ import { requireAdmin } from "@/lib/auth";
 import { getStaff } from "@/lib/db";
 import { upsertStaff, deleteStaff } from "@/lib/db-write";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
+import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { CLD } from "@/lib/cloudinary";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -19,12 +22,15 @@ if (Astro.request.method === "POST") {
     if (action === "delete") {
       await deleteStaff(Number(f.get("id")));
     } else if (action === "create") {
+      const photoUrl = (f.get("photoUrl") as string) || null;
+      await assertValidImageUrl(photoUrl, { ...IMAGE_RULES.playerPhoto, requiredFolder: "colleferro/staff" });
       await upsertStaff({
         season,
         name: String(f.get("name") ?? "").trim(),
         role: String(f.get("role") ?? "").trim(),
         group: String(f.get("group") ?? "") as "Tecnico" | "Medico" | "Dirigenza",
         ordering: Number(f.get("ordering") ?? 0),
+        photoUrl,
       });
     }
     return Astro.redirect("/admin/staff");
@@ -66,6 +72,17 @@ const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
       <input type="number" name="ordering" value={staff.length} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <div class="md:col-span-5">
+      <ImageUploader
+        name="photoUrl"
+        folder="colleferro/staff"
+        label="Foto (opzionale)"
+        hint="verticale 3:4 (es. 150×200, 450×600) · jpg/png/webp · max 5MB"
+        formats={IMAGE_RULES.playerPhoto.allowedFormats}
+        maxBytes={IMAGE_RULES.playerPhoto.maxBytes}
+        cropAspectRatio={3 / 4}
+      />
+    </div>
+    <div class="md:col-span-5">
       <button type="submit" class="btn btn-primary">Aggiungi</button>
     </div>
   </form>
@@ -73,6 +90,7 @@ const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
   <table class="w-full text-sm">
     <thead class="border-b border-carbone">
       <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4"></th>
         <th class="py-3 pr-4">Gruppo</th>
         <th class="py-3 pr-4">Nome</th>
         <th class="py-3 pr-4">Ruolo</th>
@@ -82,6 +100,13 @@ const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
     <tbody>
       {staff.map((s) => (
         <tr class="border-b border-carbone/60">
+          <td class="py-2 pr-4">
+            {s.photoUrl ? (
+              <img src={CLD.staffPortrait(s.photoUrl)} alt="" class="w-10 h-12 object-cover bg-carbone" loading="lazy" />
+            ) : (
+              <div class="w-10 h-12 bg-carbone border border-carbone" />
+            )}
+          </td>
           <td class="py-3 pr-4"><span class="font-display text-[0.65rem] tracking-wider uppercase bg-carbone text-oro px-2 py-1">{s.group}</span></td>
           <td class="py-3 pr-4 text-panna">{s.name}</td>
           <td class="py-3 pr-4 text-fumo">{s.role}</td>

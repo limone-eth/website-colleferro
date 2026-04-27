@@ -114,18 +114,19 @@ export type StaffInput = {
   role: string;
   group: "Tecnico" | "Medico" | "Dirigenza";
   ordering: number;
+  photoUrl?: string | null;
 };
 
 export async function upsertStaff(s: StaffInput, id?: number) {
   if (id != null) {
     await db.execute({
-      sql: `UPDATE staff SET season=?, name=?, role=?, grp=?, ordering=? WHERE id=?`,
-      args: [s.season, s.name, s.role, s.group, s.ordering, id],
+      sql: `UPDATE staff SET season=?, name=?, role=?, grp=?, ordering=?, photo_url=? WHERE id=?`,
+      args: [s.season, s.name, s.role, s.group, s.ordering, s.photoUrl ?? null, id],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO staff (season, name, role, grp, ordering) VALUES (?,?,?,?,?)`,
-      args: [s.season, s.name, s.role, s.group, s.ordering],
+      sql: `INSERT INTO staff (season, name, role, grp, ordering, photo_url) VALUES (?,?,?,?,?,?)`,
+      args: [s.season, s.name, s.role, s.group, s.ordering, s.photoUrl ?? null],
     });
   }
 }

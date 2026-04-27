@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { upsertStaff } from "@/lib/db-write";
 import { formatSeason } from "@/lib/season";
+import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -22,12 +24,15 @@ let error: string | undefined;
 if (Astro.request.method === "POST") {
   const f = await Astro.request.formData();
   try {
+    const photoUrl = (f.get("photoUrl") as string) || null;
+    await assertValidImageUrl(photoUrl, { ...IMAGE_RULES.playerPhoto, requiredFolder: "colleferro/staff" });
     await upsertStaff({
       season: staffSeason,
       name: String(f.get("name") ?? "").trim(),
       role: String(f.get("role") ?? "").trim(),
       group: String(f.get("group") ?? "") as "Tecnico" | "Medico" | "Dirigenza",
       ordering: Number(f.get("ordering") ?? 0),
+      photoUrl,
     }, idNum);
     return Astro.redirect("/admin/staff");
   } catch (e) {
@@ -61,6 +66,18 @@ const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
       <span class="font-display text-xs uppercase text-fumo block mb-1">Ordine</span>
       <input type="number" name="ordering" value={r.ordering as number} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
+    <div class="md:col-span-5">
+      <ImageUploader
+        name="photoUrl"
+        value={(r.photo_url as string | null) ?? ""}
+        folder="colleferro/staff"
+        label="Foto"
+        hint="verticale 3:4 (es. 150×200, 450×600) · jpg/png/webp · max 5MB"
+        formats={IMAGE_RULES.playerPhoto.allowedFormats}
+        maxBytes={IMAGE_RULES.playerPhoto.maxBytes}
+        cropAspectRatio={3 / 4}
+      />
+    </div>
     <div class="md:col-span-5 flex gap-3 pt-2">
       <button type="submit" class="btn btn-primary">Salva</button>
       <a href="/admin/staff" class="btn btn-ghost">Annulla</a>

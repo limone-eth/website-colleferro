@@ -32,6 +32,7 @@ export function cldTransform(url: string | undefined, params: string): string | 
 
 export const CLD = {
   playerCard: (url?: string) => cldTransform(url, "w_450,h_600,c_fill,g_face,q_auto,f_auto"),
+  staffPortrait: (url?: string) => cldTransform(url, "w_240,h_320,c_fill,g_face,q_auto,f_auto"),
   sponsorLogo: (url?: string) => cldTransform(url, "w_320,h_160,c_fit,q_auto,f_auto"),
   articleInline: (url?: string) => cldTransform(url, "w_1200,c_limit,q_auto,f_auto"),
   teamCrest: (url?: string) => cldTransform(url, "w_120,h_120,c_fit,q_auto,f_auto"),

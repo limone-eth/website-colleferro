@@ -67,6 +67,7 @@ export type StaffMember = {
   name: string;
   role: string;
   group: "Tecnico" | "Medico" | "Dirigenza";
+  photoUrl?: string;
 };
 
 export type Sponsor = {
@@ -317,6 +318,7 @@ export async function getStaff(season: number): Promise<StaffMember[]> {
     name: r.name as string,
     role: r.role as string,
     group: r.grp as StaffMember["group"],
+    photoUrl: (r.photo_url as string | null) ?? undefined,
   }));
 }
 
