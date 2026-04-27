@@ -5,8 +5,8 @@ const DEFAULT_MAX_BYTES = 5_000_000;
 const DEFAULT_FORMATS = ["jpg", "jpeg", "png", "webp", "avif"] as const;
 
 export type AspectRatioRule =
-  | { type: "exact"; ratio: number; tolerance?: number } // ratio = w/h, tolerance default 0.04 (~4%)
-  | { type: "min"; ratio: number; label?: string };       // w/h must be >= ratio
+  | { type: "exact"; ratio: number; tolerance?: number; label?: string } // ratio = w/h, tolerance default 0.04 (~4%)
+  | { type: "min"; ratio: number; label?: string };                      // w/h must be >= ratio
 
 export type ImageValidationOpts = {
   allowedFormats?: readonly string[];
@@ -105,9 +105,9 @@ export async function assertValidImageUrl(
         const tol = opts.aspectRatio.tolerance ?? 0.04;
         const target = opts.aspectRatio.ratio;
         if (Math.abs(r - target) / target > tol) {
-          throw new Error(
-            `Aspect ratio non valido (${info.width}×${info.height}). Richiesto ${target === 1 ? "quadrato 1:1" : `${target.toFixed(2)}:1`}.`,
-          );
+          const fallback = target === 1 ? "quadrato 1:1" : `ratio ${target.toFixed(2)}`;
+          const label = opts.aspectRatio.label ?? fallback;
+          throw new Error(`Aspect ratio non valido (${info.width}×${info.height}). Richiesto ${label}.`);
         }
       } else {
         if (r < opts.aspectRatio.ratio) {
@@ -156,5 +156,6 @@ export const IMAGE_RULES = {
   playerPhoto: {
     allowedFormats: ["jpg", "jpeg", "png", "webp", "avif"] as const,
     maxBytes: 5_000_000,
+    aspectRatio: { type: "exact", ratio: 3 / 4, tolerance: 0.04, label: "verticale 3:4 (es. 150×200, 450×600)" } as AspectRatioRule,
   },
 } as const;

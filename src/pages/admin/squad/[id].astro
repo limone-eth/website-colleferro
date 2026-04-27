@@ -84,9 +84,10 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
         value={(r.photo_url as string | null) ?? ""}
         folder="colleferro/squad"
         label="Foto giocatore"
-        hint="jpg/png/webp · max 5MB"
+        hint="verticale 3:4 (es. 150×200, 450×600) · jpg/png/webp · max 5MB"
         formats={IMAGE_RULES.playerPhoto.allowedFormats}
         maxBytes={IMAGE_RULES.playerPhoto.maxBytes}
+        cropAspectRatio={3 / 4}
       />
     </div>
     <div class="md:col-span-6 flex gap-3 pt-2">
