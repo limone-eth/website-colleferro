@@ -5,11 +5,26 @@ interface Props {
   folder?: string;
   label?: string;
   hint?: string;
+  formats?: readonly string[];
+  maxBytes?: number;
+  cropAspectRatio?: number;
+  cropMinAspectRatio?: number;
 }
-const { name, value = "", folder = "colleferro", label = "Immagine", hint } = Astro.props;
+const {
+  name,
+  value = "",
+  folder = "colleferro",
+  label = "Immagine",
+  hint,
+  formats = ["jpg", "jpeg", "png", "webp", "avif"],
+  maxBytes = 5_000_000,
+  cropAspectRatio,
+  cropMinAspectRatio,
+} = Astro.props;
 const cloudName = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
 const apiKey = import.meta.env.PUBLIC_CLOUDINARY_API_KEY;
 const id = `img-${Math.random().toString(36).slice(2, 9)}`;
+const formatsAttr = formats.join(",");
 ---
 
 <div
@@ -18,6 +33,10 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
   data-input-id={id}
   data-cloud={cloudName}
   data-apikey={apiKey}
+  data-formats={formatsAttr}
+  data-max-bytes={String(maxBytes)}
+  data-crop-ratio={cropAspectRatio != null ? String(cropAspectRatio) : ""}
+  data-crop-min-ratio={cropMinAspectRatio != null ? String(cropMinAspectRatio) : ""}
 >
   <span class="font-display text-xs uppercase text-fumo block mb-2">{label}</span>
   <div class="flex items-start gap-4">
@@ -88,6 +107,13 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
     const inputId = root.dataset.inputId!;
     const input = document.getElementById(inputId) as HTMLInputElement | null;
     const preview = root.querySelector<HTMLDivElement>(".preview");
+    const formats = (root.dataset.formats ?? "jpg,jpeg,png,webp,avif")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const maxBytes = Number(root.dataset.maxBytes ?? "5000000") || 5_000_000;
+    const cropRatio = Number(root.dataset.cropRatio ?? "");
+    const cropMinRatio = Number(root.dataset.cropMinRatio ?? "");
 
     const cl = await loadWidget();
     const errorEl = root.querySelector<HTMLParagraphElement>(".uploader-error");
@@ -100,6 +126,7 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
 
     clearError();
 
+    const cropping = Number.isFinite(cropRatio) && cropRatio > 0;
     const widget = cl.createUploadWidget(
       {
         cloudName,
@@ -109,8 +136,10 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
         sources: ["local", "url", "camera"],
         multiple: false,
         resourceType: "image",
-        clientAllowedFormats: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
-        maxFileSize: 5_000_000,
+        clientAllowedFormats: formats,
+        maxFileSize: maxBytes,
+        cropping,
+        ...(cropping ? { croppingAspectRatio: cropRatio, croppingShowDimensions: true, showSkipCropButton: false } : {}),
         text: {
           it: {
             "queue.mini_title": "Caricato",
@@ -159,8 +188,16 @@ const id = `img-${Math.random().toString(36).slice(2, 9)}`;
           return;
         }
         if (result?.event === "success" && result.info?.secure_url && input && preview) {
+          const info = result.info as { secure_url: string; width?: number; height?: number };
+          if (Number.isFinite(cropMinRatio) && cropMinRatio > 0 && info.width && info.height) {
+            const r = info.width / info.height;
+            if (r < cropMinRatio) {
+              showError(`Immagine troppo verticale (${info.width}×${info.height}). Richiesto ratio ≥ ${cropMinRatio}:1.`);
+              return;
+            }
+          }
           clearError();
-          const url = result.info.secure_url;
+          const url = info.secure_url;
           input.value = url;
           preview.innerHTML = `<img src="${url}" alt="" class="w-full h-full object-cover" />`;
         }

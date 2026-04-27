@@ -6,6 +6,7 @@ import { upsertTeam, deleteTeam } from "@/lib/db-write";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
 import ImageUploader from "@/components/admin/ImageUploader.astro";
 import { CLD } from "@/lib/cloudinary";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -25,12 +26,9 @@ if (Astro.request.method === "POST") {
       const short = String(f.get("short") ?? "").trim().toUpperCase();
       if (!name) throw new Error("Nome squadra obbligatorio.");
       if (!short || short.length > 6) throw new Error("Sigla obbligatoria (max 6 caratteri).");
-      await upsertTeam({
-        season,
-        name,
-        short,
-        crestUrl: (f.get("crestUrl") as string) || null,
-      });
+      const crestUrl = (f.get("crestUrl") as string) || null;
+      await assertValidImageUrl(crestUrl, { ...IMAGE_RULES.teamCrest, requiredFolder: "colleferro/teams" });
+      await upsertTeam({ season, name, short, crestUrl });
     }
     return Astro.redirect("/admin/teams");
   } catch (e) {
@@ -61,7 +59,15 @@ const teams = await getTeams(season);
       <input name="short" required maxlength="6" placeholder="ANA" class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
     </label>
     <div class="md:col-span-4">
-      <ImageUploader name="crestUrl" folder="colleferro/teams" label="Stemma (opzionale)" hint="png o svg con sfondo trasparente · max 5MB" />
+      <ImageUploader
+        name="crestUrl"
+        folder="colleferro/teams"
+        label="Stemma (opzionale)"
+        hint="quadrato 1:1 · png/svg con sfondo trasparente · max 2MB"
+        formats={IMAGE_RULES.teamCrest.allowedFormats}
+        maxBytes={IMAGE_RULES.teamCrest.maxBytes}
+        cropAspectRatio={1}
+      />
     </div>
     <div class="md:col-span-4">
       <button type="submit" class="btn btn-primary">Aggiungi squadra</button>

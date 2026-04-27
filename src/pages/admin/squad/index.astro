@@ -7,6 +7,7 @@ import { NATIONALITIES } from "@/lib/nationalities";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
 import ImageUploader from "@/components/admin/ImageUploader.astro";
 import { CLD } from "@/lib/cloudinary";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -22,6 +23,8 @@ if (Astro.request.method === "POST") {
     if (action === "delete") {
       await deletePlayer(Number(f.get("id")));
     } else if (action === "create") {
+      const photoUrl = (f.get("photoUrl") as string) || null;
+      await assertValidImageUrl(photoUrl, { ...IMAGE_RULES.playerPhoto, requiredFolder: "colleferro/squad" });
       await upsertPlayer({
         season,
         number: Number(f.get("number")),
@@ -29,7 +32,7 @@ if (Astro.request.method === "POST") {
         role: String(f.get("role") ?? "") as "Portiere" | "Difensore" | "Centrocampista" | "Attaccante",
         dob: (f.get("dob") as string) || null,
         nationality: (f.get("nationality") as string) || null,
-        photoUrl: (f.get("photoUrl") as string) || null,
+        photoUrl,
       });
     }
     return Astro.redirect("/admin/squad");
@@ -80,7 +83,14 @@ const roles = ["Portiere", "Difensore", "Centrocampista", "Attaccante"] as const
       </select>
     </label>
     <div class="md:col-span-6">
-      <ImageUploader name="photoUrl" folder="colleferro/squad" label="Foto (opzionale)" />
+      <ImageUploader
+        name="photoUrl"
+        folder="colleferro/squad"
+        label="Foto (opzionale)"
+        hint="jpg/png/webp · max 5MB"
+        formats={IMAGE_RULES.playerPhoto.allowedFormats}
+        maxBytes={IMAGE_RULES.playerPhoto.maxBytes}
+      />
     </div>
     <div class="md:col-span-6">
       <button type="submit" class="btn btn-primary">Aggiungi</button>

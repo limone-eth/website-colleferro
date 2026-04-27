@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { upsertSponsor } from "@/lib/db-write";
 import { formatSeason } from "@/lib/season";
 import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -23,13 +24,15 @@ let error: string | undefined;
 if (Astro.request.method === "POST") {
   const f = await Astro.request.formData();
   try {
+    const logoUrl = (f.get("logoUrl") as string) || null;
+    await assertValidImageUrl(logoUrl, { ...IMAGE_RULES.sponsorLogo, requiredFolder: "colleferro/sponsors" });
     await upsertSponsor({
       season: sponsorSeason,
       name: String(f.get("name") ?? "").trim(),
       tier: String(f.get("tier") ?? "") as "Main" | "Technical" | "Official" | "Local",
       url: (f.get("url") as string) || null,
       ordering: Number(f.get("ordering") ?? 0),
-      logoUrl: (f.get("logoUrl") as string) || null,
+      logoUrl,
     }, idNum);
     return Astro.redirect("/admin/sponsors");
   } catch (e) {
@@ -64,7 +67,16 @@ const tiers = ["Main", "Technical", "Official", "Local"] as const;
       <input type="number" name="ordering" value={r.ordering as number} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <div class="md:col-span-5">
-      <ImageUploader name="logoUrl" value={(r.logo_url as string | null) ?? ""} folder="colleferro/sponsors" label="Logo sponsor" />
+      <ImageUploader
+        name="logoUrl"
+        value={(r.logo_url as string | null) ?? ""}
+        folder="colleferro/sponsors"
+        label="Logo sponsor"
+        hint="orizzontale (largh ≥ 1,5× altezza) · png/svg con trasparenza · max 2MB"
+        formats={IMAGE_RULES.sponsorLogo.allowedFormats}
+        maxBytes={IMAGE_RULES.sponsorLogo.maxBytes}
+        cropMinAspectRatio={1.5}
+      />
     </div>
     <div class="md:col-span-5 flex gap-3 pt-2">
       <button type="submit" class="btn btn-primary">Salva</button>

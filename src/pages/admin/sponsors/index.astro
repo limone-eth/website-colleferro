@@ -6,6 +6,7 @@ import { upsertSponsor, deleteSponsor } from "@/lib/db-write";
 import { resolveAdminSeason, formatSeason } from "@/lib/season";
 import ImageUploader from "@/components/admin/ImageUploader.astro";
 import { CLD } from "@/lib/cloudinary";
+import { assertValidImageUrl, IMAGE_RULES } from "@/lib/image-validation";
 
 const guard = requireAdmin(Astro);
 if (guard) return guard;
@@ -21,13 +22,15 @@ if (Astro.request.method === "POST") {
     if (action === "delete") {
       await deleteSponsor(Number(f.get("id")));
     } else if (action === "create") {
+      const logoUrl = (f.get("logoUrl") as string) || null;
+      await assertValidImageUrl(logoUrl, { ...IMAGE_RULES.sponsorLogo, requiredFolder: "colleferro/sponsors" });
       await upsertSponsor({
         season,
         name: String(f.get("name") ?? "").trim(),
         tier: String(f.get("tier") ?? "") as "Main" | "Technical" | "Official" | "Local",
         url: (f.get("url") as string) || null,
         ordering: Number(f.get("ordering") ?? 0),
-        logoUrl: (f.get("logoUrl") as string) || null,
+        logoUrl,
       });
     }
     return Astro.redirect("/admin/sponsors");
@@ -69,7 +72,15 @@ const tiers = ["Main", "Technical", "Official", "Local"] as const;
       <input type="number" name="ordering" value={sponsors.length} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
     </label>
     <div class="md:col-span-5">
-      <ImageUploader name="logoUrl" folder="colleferro/sponsors" label="Logo (opzionale)" />
+      <ImageUploader
+        name="logoUrl"
+        folder="colleferro/sponsors"
+        label="Logo (opzionale)"
+        hint="orizzontale (largh ≥ 1,5× altezza) · png/svg con trasparenza · max 2MB"
+        formats={IMAGE_RULES.sponsorLogo.allowedFormats}
+        maxBytes={IMAGE_RULES.sponsorLogo.maxBytes}
+        cropMinAspectRatio={1.5}
+      />
     </div>
     <div class="md:col-span-5">
       <button type="submit" class="btn btn-primary">Aggiungi</button>
