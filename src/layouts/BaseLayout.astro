@@ -2,9 +2,12 @@
 import "@/styles/global.css";
 import Navbar from "@/components/Navbar.astro";
 import Footer from "@/components/Footer.astro";
+import SponsorStrip from "@/components/SponsorStrip.astro";
 import { isAuthenticated } from "@/lib/auth";
 import { isMaintenanceMode } from "@/lib/settings";
 import { SITE, absoluteUrl } from "@/lib/seo";
+import { getSponsors } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
 interface ArticleMeta {
   publishedTime?: string;
@@ -22,6 +25,7 @@ interface Props {
   canonical?: string;
   noindex?: boolean;
   article?: ArticleMeta;
+  showSponsorStrip?: boolean;
 }
 
 const {
@@ -32,7 +36,10 @@ const {
   canonical,
   noindex = false,
   article,
+  showSponsorStrip = true,
 } = Astro.props;
+
+const sponsorList = showSponsorStrip ? await getSponsors(await getCurrentSeasonYear()) : [];
 
 const base = Astro.site ?? Astro.url;
 const canonicalUrl = canonical ?? absoluteUrl(Astro.url.pathname, base);
@@ -120,6 +127,18 @@ const showMaintenanceBanner = isAuthenticated(Astro.cookies) && (await isMainten
     <main id="main">
       <slot />
     </main>
+    {showSponsorStrip && sponsorList.length > 0 && (
+      <section class="border-t border-carbone bg-grafite/30 py-10 md:py-12">
+        <div class="max-w-7xl mx-auto px-5 lg:px-8">
+          <p class="font-display text-[0.65rem] tracking-[0.3em] uppercase text-oro/80 text-center mb-6">
+            <span class="inline-block w-6 h-px bg-oro/60 align-middle mr-2"></span>
+            I nostri partner
+            <span class="inline-block w-6 h-px bg-oro/60 align-middle ml-2"></span>
+          </p>
+          <SponsorStrip sponsors={sponsorList} />
+        </div>
+      </section>
+    )}
     <Footer />
   </body>
 </html>
