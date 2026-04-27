@@ -1,7 +1,10 @@
 ---
+import { CLD } from "@/lib/cloudinary";
 interface Row {
   pos: number;
   team: string;
+  short?: string;
+  crestUrl?: string;
   p: number;
   w: number;
   d: number;
@@ -47,7 +50,16 @@ const { rows, compact = false } = Astro.props;
               </span>
             </td>
             <td class={`px-3 py-3 ${r.highlight ? "text-panna font-semibold" : "text-panna"}`}>
-              {r.team}
+              <span class="flex items-center gap-2.5">
+                {r.crestUrl ? (
+                  <img src={CLD.teamCrest(r.crestUrl)} alt="" class="w-6 h-6 object-contain shrink-0" loading="lazy" />
+                ) : (
+                  <span class="w-6 h-6 grid place-items-center bg-carbone text-fumo text-[0.55rem] font-display tracking-wider shrink-0">
+                    {r.short ?? r.team.slice(0, 3).toUpperCase()}
+                  </span>
+                )}
+                <span>{r.team}</span>
+              </span>
             </td>
             <td class="px-2 py-3 text-center text-fumo tabular-nums">{r.p}</td>
             {!compact && (

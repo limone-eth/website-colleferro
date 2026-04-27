@@ -56,11 +56,17 @@ const orgJsonLd = {
     name: SITE.stadium.name,
     address: {
       "@type": "PostalAddress",
+      streetAddress: SITE.stadium.streetAddress,
+      postalCode: SITE.stadium.postalCode,
       addressLocality: SITE.stadium.addressLocality,
       addressRegion: SITE.stadium.addressRegion,
       addressCountry: SITE.stadium.addressCountry,
     },
   },
+  vatID: SITE.vatId,
+  taxID: SITE.taxId,
+  telephone: SITE.telephone,
+  email: SITE.email,
 };
 
 const websiteJsonLd = {
@@ -275,8 +281,6 @@ const websiteJsonLd = {
     <SectionHeader
       eyebrow="I nostri partner"
       title="Al fianco del Colleferro"
-      ctaLabel="Diventa sponsor"
-      ctaHref="/sponsor"
     />
     <SponsorStrip sponsors={sponsors} />
   </section>

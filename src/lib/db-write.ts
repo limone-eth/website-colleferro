@@ -165,18 +165,19 @@ export type TeamInput = {
   season: number;
   name: string;
   short: string;
+  crestUrl?: string | null;
 };
 
 export async function upsertTeam(t: TeamInput, id?: number) {
   if (id != null) {
     await db.execute({
-      sql: `UPDATE teams SET season=?, name=?, short=? WHERE id=?`,
-      args: [t.season, t.name, t.short, id],
+      sql: `UPDATE teams SET season=?, name=?, short=?, crest_url=? WHERE id=?`,
+      args: [t.season, t.name, t.short, t.crestUrl ?? null, id],
     });
   } else {
     await db.execute({
-      sql: `INSERT INTO teams (season, name, short) VALUES (?,?,?) ON CONFLICT(season, name) DO UPDATE SET short=excluded.short`,
-      args: [t.season, t.name, t.short],
+      sql: `INSERT INTO teams (season, name, short, crest_url) VALUES (?,?,?,?) ON CONFLICT(season, name) DO UPDATE SET short=excluded.short, crest_url=excluded.crest_url`,
+      args: [t.season, t.name, t.short, t.crestUrl ?? null],
     });
   }
 }

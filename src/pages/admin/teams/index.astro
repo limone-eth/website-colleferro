@@ -1,0 +1,109 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getTeams } from "@/lib/db";
+import { upsertTeam, deleteTeam } from "@/lib/db-write";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
+import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { CLD } from "@/lib/cloudinary";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deleteTeam(Number(f.get("id")));
+    } else if (action === "create") {
+      const name = String(f.get("name") ?? "").trim();
+      const short = String(f.get("short") ?? "").trim().toUpperCase();
+      if (!name) throw new Error("Nome squadra obbligatorio.");
+      if (!short || short.length > 6) throw new Error("Sigla obbligatoria (max 6 caratteri).");
+      await upsertTeam({
+        season,
+        name,
+        short,
+        crestUrl: (f.get("crestUrl") as string) || null,
+      });
+    }
+    return Astro.redirect("/admin/teams");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const teams = await getTeams(season);
+---
+
+<AdminLayout title="Squadre" current="teams">
+  <div class="mb-6 border-b border-carbone pb-4">
+    <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Squadre · Stagione {formatSeason(season)}</p>
+    <h1 class="font-display text-2xl text-panna">Avversarie del campionato</h1>
+    <p class="text-fumo text-xs mt-2">Carica lo stemma di ogni squadra: comparirà in classifica e nelle schede partita.</p>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-5 grid md:grid-cols-4 gap-3 items-end mb-8">
+    <input type="hidden" name="action" value="create" />
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Nome</span>
+      <input name="name" required placeholder="Es. Città di Anagni" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Sigla</span>
+      <input name="short" required maxlength="6" placeholder="ANA" class="w-full bg-nero border border-carbone px-3 py-2 text-panna uppercase" />
+    </label>
+    <div class="md:col-span-4">
+      <ImageUploader name="crestUrl" folder="colleferro/teams" label="Stemma (opzionale)" hint="png o svg con sfondo trasparente · max 5MB" />
+    </div>
+    <div class="md:col-span-4">
+      <button type="submit" class="btn btn-primary">Aggiungi squadra</button>
+    </div>
+  </form>
+
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4">Stemma</th>
+        <th class="py-3 pr-4">Nome</th>
+        <th class="py-3 pr-4">Sigla</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {teams.map((t) => (
+        <tr class="border-b border-carbone/60">
+          <td class="py-2 pr-4">
+            {t.crestUrl ? (
+              <img src={CLD.teamCrest(t.crestUrl)} alt="" class="h-10 w-10 object-contain" loading="lazy" />
+            ) : (
+              <div class="h-10 w-10 grid place-items-center bg-carbone text-fumo text-[0.6rem] font-display">{t.short}</div>
+            )}
+          </td>
+          <td class="py-3 pr-4 text-panna">{t.name}</td>
+          <td class="py-3 pr-4 text-fumo font-display">{t.short}</td>
+          <td class="py-3 flex gap-2 justify-end">
+            <a href={`/admin/teams/${t.id}`} class="btn btn-ghost text-xs">Modifica</a>
+            <form method="post" onsubmit="return confirm('Eliminare questa squadra? Le partite restano ma perderanno l’aggancio allo stemma.')">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="id" value={t.id} />
+              <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+            </form>
+          </td>
+        </tr>
+      ))}
+      {teams.length === 0 && (
+        <tr>
+          <td colspan="4" class="py-6 text-fumo text-center text-sm">Nessuna squadra registrata per questa stagione.</td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</AdminLayout>

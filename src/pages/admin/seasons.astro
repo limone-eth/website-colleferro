@@ -43,8 +43,8 @@ if (Astro.request.method === "POST") {
         args: [toYear, fromYear],
       });
       await db.execute({
-        sql: `INSERT OR IGNORE INTO teams (season, name, short)
-              SELECT ?, name, short FROM teams WHERE season = ?`,
+        sql: `INSERT OR IGNORE INTO teams (season, name, short, crest_url)
+              SELECT ?, name, short, crest_url FROM teams WHERE season = ?`,
         args: [toYear, fromYear],
       });
       success = `Rosa, staff, sponsor e squadre copiate da ${fromYear} a ${toYear}.`;

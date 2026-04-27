@@ -15,8 +15,8 @@ export type Match = {
   date: string;
   dateLong: string;
   time: string;
-  home: { name: string; short: string };
-  away: { name: string; short: string };
+  home: { name: string; short: string; crestUrl?: string };
+  away: { name: string; short: string; crestUrl?: string };
   venue: string;
   status: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };
@@ -26,6 +26,8 @@ export type Match = {
 export type StandingRow = {
   pos: number;
   team: string;
+  short?: string;
+  crestUrl?: string;
   p: number;
   w: number;
   d: number;
@@ -81,6 +83,7 @@ export type Team = {
   season: number;
   name: string;
   short: string;
+  crestUrl?: string;
 };
 
 const rowToMatch = (r: Record<string, unknown>): Match => ({
@@ -91,8 +94,16 @@ const rowToMatch = (r: Record<string, unknown>): Match => ({
   date: r.date as string,
   dateLong: r.date_long as string,
   time: r.time as string,
-  home: { name: r.home_name as string, short: r.home_short as string },
-  away: { name: r.away_name as string, short: r.away_short as string },
+  home: {
+    name: r.home_name as string,
+    short: r.home_short as string,
+    crestUrl: (r.home_crest as string | null) ?? undefined,
+  },
+  away: {
+    name: r.away_name as string,
+    short: r.away_short as string,
+    crestUrl: (r.away_crest as string | null) ?? undefined,
+  },
   venue: r.venue as string,
   status: r.status as Match["status"],
   score: r.score_home != null && r.score_away != null
@@ -101,9 +112,18 @@ const rowToMatch = (r: Record<string, unknown>): Match => ({
   kickoffTs: Number(r.kickoff_ts),
 });
 
+const MATCH_SELECT_WITH_CRESTS = `
+  SELECT m.*,
+         ht.crest_url AS home_crest,
+         awt.crest_url AS away_crest
+  FROM matches m
+  LEFT JOIN teams ht  ON ht.season  = m.season AND ht.name  = m.home_name
+  LEFT JOIN teams awt ON awt.season = m.season AND awt.name = m.away_name
+`;
+
 export async function getAllMatches(season: number): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM matches WHERE season = ? ORDER BY kickoff_ts ASC",
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? ORDER BY m.kickoff_ts ASC`,
     args: [season],
   });
   return rows.map(rowToMatch);
@@ -111,7 +131,7 @@ export async function getAllMatches(season: number): Promise<Match[]> {
 
 export async function getColleferroMatches(season: number): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM matches WHERE season = ? AND (home_name = ? OR away_name = ?) ORDER BY kickoff_ts ASC",
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC`,
     args: [season, "Colleferro", "Colleferro"],
   });
   return rows.map(rowToMatch);
@@ -119,7 +139,7 @@ export async function getColleferroMatches(season: number): Promise<Match[]> {
 
 export async function getNextMatch(season: number): Promise<Match | null> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM matches WHERE season = ? AND status = 'upcoming' AND (home_name = ? OR away_name = ?) ORDER BY kickoff_ts ASC LIMIT 1",
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.status = 'upcoming' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC LIMIT 1`,
     args: [season, "Colleferro", "Colleferro"],
   });
   return rows[0] ? rowToMatch(rows[0]) : null;
@@ -127,7 +147,7 @@ export async function getNextMatch(season: number): Promise<Match | null> {
 
 export async function getLastResults(season: number, limit = 3): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM matches WHERE season = ? AND status = 'finished' AND (home_name = ? OR away_name = ?) ORDER BY kickoff_ts DESC LIMIT ?",
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.status = 'finished' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts DESC LIMIT ?`,
     args: [season, "Colleferro", "Colleferro", limit],
   });
   return rows.map(rowToMatch);
@@ -150,12 +170,20 @@ export async function getStandings(season: number): Promise<StandingRow[]> {
     return s;
   };
 
-  // ensure every registered team shows up even with 0 matches
+  // ensure every registered team shows up even with 0 matches, and capture crest/short for the row
   const { rows: teamsRows } = await db.execute({
-    sql: "SELECT name FROM teams WHERE season = ?",
+    sql: "SELECT name, short, crest_url FROM teams WHERE season = ?",
     args: [season],
   });
-  for (const t of teamsRows) touch(t.name as string);
+  const meta = new Map<string, { short?: string; crestUrl?: string }>();
+  for (const t of teamsRows) {
+    const name = t.name as string;
+    touch(name);
+    meta.set(name, {
+      short: (t.short as string | null) ?? undefined,
+      crestUrl: (t.crest_url as string | null) ?? undefined,
+    });
+  }
 
   for (const r of rows) {
     const home = r.home_name as string;
@@ -182,6 +210,8 @@ export async function getStandings(season: number): Promise<StandingRow[]> {
   return sorted.map((s, i) => ({
     pos: i + 1,
     team: s.team,
+    short: meta.get(s.team)?.short,
+    crestUrl: meta.get(s.team)?.crestUrl,
     p: s.p, w: s.w, d: s.d, l: s.l, gf: s.gf, ga: s.ga, pts: s.pts,
     highlight: s.team === "Colleferro",
   }));
@@ -197,6 +227,7 @@ export async function getTeams(season: number): Promise<Team[]> {
     season: Number(r.season),
     name: r.name as string,
     short: r.short as string,
+    crestUrl: (r.crest_url as string | null) ?? undefined,
   }));
 }
 

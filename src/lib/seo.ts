@@ -8,10 +8,16 @@ export const SITE = {
   defaultOgImagePath: "/logo.png",
   stadium: {
     name: "Stadio Comunale Caslini",
+    streetAddress: "Via Francesco Berni, 14",
+    postalCode: "00034",
     addressLocality: "Colleferro",
     addressRegion: "RM",
     addressCountry: "IT",
   },
+  vatId: "IT05572841004",
+  taxId: "05572841004",
+  telephone: "+39 06 8678 9639",
+  email: "info@colleferrocalcio.it",
 } as const;
 
 export function absoluteUrl(pathOrUrl: string, base: URL | string): string {
