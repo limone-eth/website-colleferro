@@ -1,4 +1,17 @@
 ---
+import { getYouthCategories } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
+
+const season = await getCurrentSeasonYear();
+const youthCategories = await getYouthCategories(season);
+
+const youthChildren = [
+  { label: "Panoramica", href: "/settore-giovanile" },
+  { label: "Stadio / Campo", href: "/settore-giovanile/stadio" },
+  { label: "News giovanili", href: "/settore-giovanile/news" },
+  ...youthCategories.map((c) => ({ label: c.name, href: `/settore-giovanile/${c.slug}` })),
+];
+
 const nav = [
   {
     label: "Club",
@@ -14,6 +27,7 @@ const nav = [
       { label: "Staff", href: "/squadra/staff" },
     ],
   },
+  { label: "Settore Giovanile", children: youthChildren },
   { label: "Stagione", href: "/stagione" },
   { label: "News", href: "/news" },
   { label: "Contatti", href: "/contatti" },

@@ -1,0 +1,134 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { db, getYouthCategoryById } from "@/lib/db";
+import { upsertMatch } from "@/lib/db-write";
+import { dateFieldsFromInput, shortFor, ymdFromKickoff } from "@/lib/match-utils";
+import { formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { id, mid } = Astro.params;
+if (!id || !mid) return Astro.redirect("/admin/youth");
+const catId = Number(id);
+
+const category = await getYouthCategoryById(catId);
+if (!category) return new Response("Categoria non trovata", { status: 404 });
+
+const { rows } = await db.execute({ sql: "SELECT * FROM matches WHERE id = ?", args: [mid] });
+if (!rows[0]) return new Response("Partita non trovata", { status: 404 });
+const r = rows[0];
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    const opponent = String(f.get("opponent") ?? "").trim();
+    if (!opponent) throw new Error("Nome avversario richiesto.");
+    const home = String(f.get("home") ?? "casa") === "casa";
+    const fields = dateFieldsFromInput(
+      String(f.get("matchDate") ?? ""),
+      String(f.get("matchTime") ?? "15:00"),
+    );
+    const homeName = home ? "Colleferro" : opponent;
+    const awayName = home ? opponent : "Colleferro";
+    await upsertMatch({
+      id: mid,
+      season: Number(r.season),
+      matchday: String(f.get("matchday") ?? "").trim(),
+      competition: String(f.get("competition") ?? "").trim() || category.name,
+      date: fields.date,
+      dateLong: fields.dateLong,
+      time: fields.time,
+      homeName, homeShort: shortFor(homeName),
+      awayName, awayShort: shortFor(awayName),
+      venue: String(f.get("venue") ?? "").trim(),
+      status: String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished",
+      scoreHome: f.get("scoreHome") ? Number(f.get("scoreHome")) : null,
+      scoreAway: f.get("scoreAway") ? Number(f.get("scoreAway")) : null,
+      kickoffTs: fields.kickoffTs,
+      youthCategoryId: catId,
+    }, mid);
+    return Astro.redirect(`/admin/youth/categories/${catId}/matches`);
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const homeName = r.home_name as string;
+const awayName = r.away_name as string;
+const colleferroHome = homeName === "Colleferro";
+const opponent = colleferroHome ? awayName : homeName;
+const datePrefill = ymdFromKickoff(Number(r.kickoff_ts));
+---
+
+<AdminLayout title="Modifica partita" current="youth">
+  <h1 class="font-display text-2xl text-panna mb-2">Modifica partita · {category.name}</h1>
+  <p class="text-fumo text-xs mb-6">Stagione {formatSeason(category.season)}</p>
+
+  <form method="post" class="bg-grafite border border-carbone p-6 space-y-4">
+    {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+    <div class="grid md:grid-cols-4 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Giornata</span>
+        <input name="matchday" value={r.matchday as string} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block md:col-span-2">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Competizione</span>
+        <input name="competition" value={r.competition as string} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Stato</span>
+        <select name="status" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+          <option value="upcoming" selected={r.status === "upcoming"}>In programma</option>
+          <option value="live" selected={r.status === "live"}>In corso</option>
+          <option value="finished" selected={r.status === "finished"}>Conclusa</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Data</span>
+        <input type="date" name="matchDate" required value={datePrefill} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Ora</span>
+        <input type="time" name="matchTime" required value={r.time as string} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Casa/Trasferta</span>
+        <select name="home" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+          <option value="casa" selected={colleferroHome}>Colleferro in casa</option>
+          <option value="trasferta" selected={!colleferroHome}>Colleferro in trasferta</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Avversario</span>
+        <input name="opponent" required value={opponent} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Stadio / Campo</span>
+        <input name="venue" value={r.venue as string} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Gol casa</span>
+        <input type="number" name="scoreHome" min="0" value={r.score_home ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Gol ospite</span>
+        <input type="number" name="scoreAway" min="0" value={r.score_away ?? ""} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button type="submit" class="btn btn-primary">Salva</button>
+      <a href={`/admin/youth/categories/${catId}/matches`} class="btn btn-ghost">Annulla</a>
+    </div>
+  </form>
+</AdminLayout>

@@ -27,3 +27,40 @@ export async function isMaintenanceMode(): Promise<boolean> {
 export async function setMaintenanceMode(enabled: boolean): Promise<void> {
   await setSetting(MAINTENANCE_KEY, enabled ? "1" : "0");
 }
+
+// ----- Stadio settore giovanile -------------------------------------------
+
+const YOUTH_STADIUM_KEY = "youth_stadium";
+
+export type YouthStadium = {
+  name: string;
+  address: string;
+  city: string;
+  description: string;
+  photoUrl: string;
+  mapsUrl: string;
+};
+
+const EMPTY_YOUTH_STADIUM: YouthStadium = {
+  name: "",
+  address: "",
+  city: "",
+  description: "",
+  photoUrl: "",
+  mapsUrl: "",
+};
+
+export async function getYouthStadium(): Promise<YouthStadium> {
+  const raw = await getSetting(YOUTH_STADIUM_KEY);
+  if (!raw) return EMPTY_YOUTH_STADIUM;
+  try {
+    const parsed = JSON.parse(raw) as Partial<YouthStadium>;
+    return { ...EMPTY_YOUTH_STADIUM, ...parsed };
+  } catch {
+    return EMPTY_YOUTH_STADIUM;
+  }
+}
+
+export async function setYouthStadium(value: YouthStadium): Promise<void> {
+  await setSetting(YOUTH_STADIUM_KEY, JSON.stringify(value));
+}

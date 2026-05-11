@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
-import { getAllNews } from "@/lib/db";
+import { getAllNews, getYouthCategories } from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
 
 const STATIC_PATHS: Array<{ path: string; changefreq: string; priority: string }> = [
   { path: "/", changefreq: "daily", priority: "1.0" },
@@ -7,6 +8,9 @@ const STATIC_PATHS: Array<{ path: string; changefreq: string; priority: string }
   { path: "/stagione", changefreq: "weekly", priority: "0.8" },
   { path: "/squadra/prima-squadra", changefreq: "weekly", priority: "0.7" },
   { path: "/squadra/staff", changefreq: "monthly", priority: "0.5" },
+  { path: "/settore-giovanile", changefreq: "weekly", priority: "0.7" },
+  { path: "/settore-giovanile/stadio", changefreq: "yearly", priority: "0.4" },
+  { path: "/settore-giovanile/news", changefreq: "weekly", priority: "0.5" },
   { path: "/stadio", changefreq: "yearly", priority: "0.5" },
   { path: "/storia", changefreq: "yearly", priority: "0.5" },
   { path: "/sponsor", changefreq: "monthly", priority: "0.5" },
@@ -19,7 +23,10 @@ const xmlEscape = (s: string) =>
 
 export const GET: APIRoute = async ({ site }) => {
   const base = (site?.toString() ?? "https://www.colleferrocalcio.it").replace(/\/$/, "");
-  const news = await getAllNews();
+  const [news, youthCategories] = await Promise.all([
+    getAllNews(),
+    getYouthCategories(await getCurrentSeasonYear()),
+  ]);
 
   const entries: Array<{ loc: string; lastmod?: string; changefreq: string; priority: string }> = [
     ...STATIC_PATHS.map((s) => ({ loc: `${base}${s.path}`, changefreq: s.changefreq, priority: s.priority })),
@@ -27,6 +34,11 @@ export const GET: APIRoute = async ({ site }) => {
       loc: `${base}/news/${n.slug}`,
       lastmod: n.dateIso || undefined,
       changefreq: "monthly",
+      priority: "0.6",
+    })),
+    ...youthCategories.map((c) => ({
+      loc: `${base}/settore-giovanile/${c.slug}`,
+      changefreq: "weekly",
       priority: "0.6",
     })),
   ];

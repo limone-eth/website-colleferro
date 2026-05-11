@@ -1,0 +1,150 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getYouthCategoryById, getYouthCategoryStaff, getYouthCategoryMatches, getYouthStandings, db } from "@/lib/db";
+import { upsertYouthCategory, deleteYouthCategory } from "@/lib/db-write";
+import { formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/youth");
+const idNum = Number(id);
+
+const category = await getYouthCategoryById(idNum);
+if (!category) return new Response("Categoria non trovata", { status: 404 });
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+let error: string | undefined;
+let notice: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deleteYouthCategory(idNum);
+      return Astro.redirect("/admin/youth");
+    }
+    const name = String(f.get("name") ?? "").trim();
+    if (!name) throw new Error("Nome richiesto.");
+    let slug = String(f.get("slug") ?? "").trim();
+    if (!slug) slug = slugify(name);
+    else slug = slugify(slug);
+    if (!slug) throw new Error("Slug non valido.");
+    if (slug !== category.slug) {
+      const { rows } = await db.execute({
+        sql: "SELECT id FROM youth_categories WHERE season = ? AND slug = ? AND id != ?",
+        args: [category.season, slug, idNum],
+      });
+      if (rows.length > 0) throw new Error("Slug già usato per un'altra categoria.");
+    }
+    await upsertYouthCategory({
+      season: category.season,
+      slug,
+      name,
+      description: String(f.get("description") ?? "").trim() || null,
+      ordering: Number(f.get("ordering") ?? 0),
+    }, idNum);
+    notice = "Salvato.";
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+// re-fetch after update
+const c = (await getYouthCategoryById(idNum))!;
+const [staff, matches, standings] = await Promise.all([
+  getYouthCategoryStaff(idNum),
+  getYouthCategoryMatches(idNum),
+  getYouthStandings(idNum),
+]);
+---
+
+<AdminLayout title={`Categoria · ${c.name}`} current="youth">
+  <div class="mb-6 border-b border-carbone pb-4 flex items-end justify-between gap-4">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">
+        Settore Giovanile · Stagione {formatSeason(c.season)}
+      </p>
+      <h1 class="font-display text-2xl text-panna">{c.name}</h1>
+      <p class="text-fumo text-xs mt-1">/settore-giovanile/{c.slug}</p>
+    </div>
+    <a href="/admin/youth" class="btn btn-ghost">Indietro</a>
+  </div>
+
+  {notice && <p class="mb-4 text-sm text-oro border border-oro/40 bg-oro/10 px-3 py-2">{notice}</p>}
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <section class="mb-10 grid sm:grid-cols-3 gap-4">
+    <a href={`/admin/youth/categories/${c.id}/staff`} class="bg-grafite border border-carbone hover:border-oro/60 p-5 transition-colors block">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="font-display text-lg text-panna">Tecnici</span>
+        <span class="font-display text-3xl font-bold text-oro tabular-nums">{staff.length}</span>
+      </div>
+      <p class="text-fumo text-xs">Allenatore, vice, preparatori della categoria.</p>
+    </a>
+    <a href={`/admin/youth/categories/${c.id}/matches`} class="bg-grafite border border-carbone hover:border-oro/60 p-5 transition-colors block">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="font-display text-lg text-panna">Calendario / Risultati</span>
+        <span class="font-display text-3xl font-bold text-oro tabular-nums">{matches.length}</span>
+      </div>
+      <p class="text-fumo text-xs">Solo le partite del Colleferro.</p>
+    </a>
+    <a href={`/admin/youth/categories/${c.id}/standings`} class="bg-grafite border border-carbone hover:border-oro/60 p-5 transition-colors block">
+      <div class="flex items-baseline justify-between mb-1">
+        <span class="font-display text-lg text-panna">Classifica</span>
+        <span class="font-display text-3xl font-bold text-oro tabular-nums">{standings.length}</span>
+      </div>
+      <p class="text-fumo text-xs">Inserita manualmente, riga per riga.</p>
+    </a>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="font-display text-lg text-panna mb-3">Info categoria</h2>
+    <form method="post" class="bg-grafite border border-carbone p-6 space-y-5">
+      <div class="grid md:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="font-display text-xs uppercase text-fumo block mb-2">Nome</span>
+          <input name="name" required value={c.name} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+        </label>
+        <label class="block">
+          <span class="font-display text-xs uppercase text-fumo block mb-2">Slug</span>
+          <input name="slug" value={c.slug} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+        </label>
+      </div>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-2">Descrizione</span>
+        <textarea name="description" rows="3" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">{c.description ?? ""}</textarea>
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-2">Ordine</span>
+        <input type="number" name="ordering" value={c.ordering} class="w-32 bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="btn btn-primary">Salva info</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="font-display text-lg text-panna mb-3">Zona pericolosa</h2>
+    <form method="post" class="bg-grafite border border-rosso/40 p-6 flex items-center justify-between gap-4" onsubmit="return confirm('Eliminare la categoria? Le partite e lo staff associati verranno scollegati, le righe di classifica verranno eliminate.')">
+      <input type="hidden" name="action" value="delete" />
+      <div>
+        <p class="font-display text-sm text-panna">Elimina categoria</p>
+        <p class="text-fumo text-xs mt-1">Le partite/staff scollegate non vengono eliminate, solo distaccate.</p>
+      </div>
+      <button type="submit" class="btn btn-ghost text-rosso">Elimina</button>
+    </form>
+  </section>
+</AdminLayout>

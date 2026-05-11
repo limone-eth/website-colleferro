@@ -1,0 +1,203 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import MatchCard from "@/components/MatchCard.astro";
+import {
+  getYouthCategoryBySlug,
+  getYouthCategoryStaff,
+  getYouthCategoryMatches,
+  getYouthStandings,
+  getYouthCategories,
+} from "@/lib/db";
+import { getCurrentSeasonYear } from "@/lib/season";
+import { CLD } from "@/lib/cloudinary";
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect("/settore-giovanile");
+
+const season = await getCurrentSeasonYear();
+const category = await getYouthCategoryBySlug(season, slug);
+if (!category) return new Response("Categoria non trovata", { status: 404 });
+
+const [staff, matches, standings, allCategories] = await Promise.all([
+  getYouthCategoryStaff(category.id),
+  getYouthCategoryMatches(category.id),
+  getYouthStandings(category.id),
+  getYouthCategories(season),
+]);
+
+const upcoming = matches.filter((m) => m.status !== "finished");
+const finished = matches.filter((m) => m.status === "finished").slice().reverse();
+
+const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
+const groupLabels: Record<(typeof groups)[number], string> = {
+  Tecnico: "Staff Tecnico",
+  Medico: "Area medica",
+  Dirigenza: "Dirigenza",
+};
+
+const otherCategories = allCategories.filter((c) => c.id !== category.id);
+---
+
+<BaseLayout
+  title={`${category.name} — Settore Giovanile · Colleferro Calcio`}
+  description={category.description ?? `Tecnici, calendario, risultati e classifica della categoria ${category.name} del Colleferro Calcio.`}
+>
+  <Hero
+    eyebrow="Settore Giovanile"
+    title={category.name}
+    subtitle={category.description ?? "Tecnici, calendario, risultati e classifica della categoria."}
+  />
+
+  {/* TECNICI */}
+  {staff.length > 0 && (
+    <section class="max-w-7xl mx-auto px-5 lg:px-8 py-16 md:py-20">
+      <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+        <h2 class="font-display text-2xl md:text-3xl text-panna">Tecnici</h2>
+        <span class="font-display text-xs tracking-[0.25em] uppercase text-oro">{staff.length}</span>
+      </div>
+      <div class="space-y-8">
+        {groups.map((g) => {
+          const members = staff.filter((s) => s.group === g);
+          if (members.length === 0) return null;
+          return (
+            <div>
+              <h3 class="font-display text-sm tracking-[0.2em] uppercase text-oro mb-4">{groupLabels[g]}</h3>
+              <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {members.map((m) => (
+                  <article class="bg-grafite border border-carbone hover:border-rosso/60 transition-colors p-4 flex items-center gap-4">
+                    <div class="w-16 aspect-[3/4] bg-nero border border-fumo/20 overflow-hidden grid place-items-center shrink-0">
+                      {m.photoUrl ? (
+                        <img src={CLD.staffPortrait(m.photoUrl)} alt={m.name} loading="lazy" class="w-full h-full object-cover" />
+                      ) : (
+                        <svg viewBox="0 0 24 24" class="w-7 h-7 text-panna/40" fill="currentColor" aria-hidden="true">
+                          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-rosso">{m.role}</p>
+                      <h4 class="font-display text-lg text-panna leading-tight mt-1 truncate">{m.name}</h4>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  {/* CALENDARIO / RISULTATI */}
+  {(upcoming.length > 0 || finished.length > 0) && (
+    <section class="bg-grafite/40 border-y border-carbone py-16 md:py-20">
+      <div class="max-w-7xl mx-auto px-5 lg:px-8 space-y-12">
+        {upcoming.length > 0 && (
+          <div>
+            <h2 class="font-display text-2xl md:text-3xl text-panna mb-6">Prossime partite</h2>
+            <div class="grid md:grid-cols-2 gap-5">
+              {upcoming.map((m) => (
+                <MatchCard
+                  home={m.home}
+                  away={m.away}
+                  date={m.date}
+                  time={m.time}
+                  venue={m.venue}
+                  competition={m.competition}
+                  matchday={m.matchday}
+                  status={m.status}
+                  score={m.score}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {finished.length > 0 && (
+          <div>
+            <h2 class="font-display text-2xl md:text-3xl text-panna mb-6">Ultimi risultati</h2>
+            <div class="grid md:grid-cols-2 gap-5">
+              {finished.map((m) => (
+                <MatchCard
+                  home={m.home}
+                  away={m.away}
+                  date={m.date}
+                  time={m.time}
+                  venue={m.venue}
+                  competition={m.competition}
+                  matchday={m.matchday}
+                  status={m.status}
+                  score={m.score}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  {/* CLASSIFICA */}
+  {standings.length > 0 && (
+    <section class="max-w-7xl mx-auto px-5 lg:px-8 py-16 md:py-20">
+      <div class="flex items-end justify-between mb-6 border-b border-carbone pb-4">
+        <h2 class="font-display text-2xl md:text-3xl text-panna">Classifica</h2>
+        <span class="font-display text-xs tracking-[0.25em] uppercase text-fumo">Aggiornata manualmente</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="border-b border-carbone">
+            <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+              <th class="py-3 pr-2 w-12">Pos</th>
+              <th class="py-3 pr-4">Squadra</th>
+              <th class="py-3 pr-2 text-center">G</th>
+              <th class="py-3 pr-2 text-center">V</th>
+              <th class="py-3 pr-2 text-center">N</th>
+              <th class="py-3 pr-2 text-center">P</th>
+              <th class="py-3 pr-2 text-center">GF</th>
+              <th class="py-3 pr-2 text-center">GS</th>
+              <th class="py-3 pr-2 text-center">Pti</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((s) => (
+              <tr class={`border-b border-carbone/60 ${s.highlight ? "bg-rosso/10" : ""}`}>
+                <td class="py-3 pr-2 tabular-nums text-fumo">{s.pos}</td>
+                <td class={`py-3 pr-4 ${s.highlight ? "text-oro font-display" : "text-panna"}`}>{s.team}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.p}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.w}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.d}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.l}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.gf}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-fumo">{s.ga}</td>
+                <td class="py-3 pr-2 text-center tabular-nums text-oro font-display">{s.pts}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+
+  {staff.length === 0 && matches.length === 0 && standings.length === 0 && (
+    <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 text-center">
+      <p class="text-fumo">Contenuti in fase di pubblicazione per questa categoria.</p>
+    </section>
+  )}
+
+  {/* Altre categorie */}
+  {otherCategories.length > 0 && (
+    <section class="bg-grafite/40 border-t border-carbone py-12 md:py-16">
+      <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-4">Altre categorie</p>
+        <div class="flex flex-wrap gap-2">
+          {otherCategories.map((c) => (
+            <a href={`/settore-giovanile/${c.slug}`} class="font-display text-xs tracking-[0.2em] uppercase border border-carbone hover:border-oro hover:text-oro text-panna px-4 py-2 transition-colors">
+              {c.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>

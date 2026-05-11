@@ -1,0 +1,125 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import ImageUploader from "@/components/admin/ImageUploader.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getYouthManagement } from "@/lib/db";
+import { upsertStaff, deleteStaff } from "@/lib/db-write";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
+import { CLD } from "@/lib/cloudinary";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deleteStaff(Number(f.get("id")));
+    } else if (action === "create") {
+      await upsertStaff({
+        season,
+        name: String(f.get("name") ?? "").trim(),
+        role: String(f.get("role") ?? "").trim(),
+        group: String(f.get("group") ?? "") as "Tecnico" | "Medico" | "Dirigenza",
+        ordering: Number(f.get("ordering") ?? 0),
+        photoUrl: (f.get("photoUrl") as string) || null,
+        isYouthManagement: true,
+      });
+    }
+    return Astro.redirect("/admin/youth/management");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const members = await getYouthManagement(season);
+const groups = ["Tecnico", "Medico", "Dirigenza"] as const;
+---
+
+<AdminLayout title="Organigramma settore giovanile" current="youth">
+  <div class="mb-6 border-b border-carbone pb-4 flex items-end justify-between">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Settore Giovanile · Stagione {formatSeason(season)}</p>
+      <h1 class="font-display text-2xl text-panna">Organigramma</h1>
+      <p class="text-fumo text-xs mt-2">Responsabile, coordinatore tecnico, segretario, dirigenti del settore.</p>
+    </div>
+    <a href="/admin/youth" class="btn btn-ghost">Indietro</a>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-5 grid md:grid-cols-5 gap-3 items-end mb-8">
+    <input type="hidden" name="action" value="create" />
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Nome</span>
+      <input name="name" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block md:col-span-2">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Ruolo</span>
+      <input name="role" required placeholder="Responsabile Settore Giovanile" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Gruppo</span>
+      <select name="group" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+        {groups.map((g) => <option value={g}>{g}</option>)}
+      </select>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-1">Ordine</span>
+      <input type="number" name="ordering" value={members.length} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <div class="md:col-span-5">
+      <ImageUploader
+        name="photoUrl"
+        folder="colleferro/staff"
+        label="Foto (opzionale)"
+        hint="verticale 3:4 · jpg/png/webp · max 5MB"
+        cropAspectRatio={3 / 4}
+      />
+    </div>
+    <div class="md:col-span-5">
+      <button type="submit" class="btn btn-primary">Aggiungi</button>
+    </div>
+  </form>
+
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4"></th>
+        <th class="py-3 pr-4">Gruppo</th>
+        <th class="py-3 pr-4">Nome</th>
+        <th class="py-3 pr-4">Ruolo</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {members.map((s) => (
+        <tr class="border-b border-carbone/60">
+          <td class="py-2 pr-4">
+            {s.photoUrl ? (
+              <img src={CLD.staffPortrait(s.photoUrl)} alt="" class="w-10 h-12 object-cover bg-carbone" loading="lazy" />
+            ) : (
+              <div class="w-10 h-12 bg-carbone border border-carbone" />
+            )}
+          </td>
+          <td class="py-3 pr-4"><span class="font-display text-[0.65rem] tracking-wider uppercase bg-carbone text-oro px-2 py-1">{s.group}</span></td>
+          <td class="py-3 pr-4 text-panna">{s.name}</td>
+          <td class="py-3 pr-4 text-fumo">{s.role}</td>
+          <td class="py-3 flex gap-2 justify-end">
+            <a href={`/admin/youth/management/${s.id}`} class="btn btn-ghost text-xs">Modifica</a>
+            <form method="post" onsubmit="return confirm('Eliminare questo membro?')">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="id" value={s.id} />
+              <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+            </form>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>

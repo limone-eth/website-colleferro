@@ -1,0 +1,57 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import { getYouthStadium } from "@/lib/settings";
+
+const stadium = await getYouthStadium();
+---
+
+<BaseLayout
+  title={`${stadium.name || "Campo settore giovanile"} — Colleferro Calcio`}
+  description={stadium.description || "Il campo del settore giovanile del Colleferro Calcio."}
+>
+  <Hero
+    eyebrow="Settore Giovanile"
+    title={stadium.name || "Il nostro campo"}
+    subtitle={stadium.city || "L'impianto del settore giovanile del Colleferro Calcio."}
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24 grid lg:grid-cols-2 gap-12 items-start">
+    <div class="aspect-[4/3] bg-grafite border border-carbone overflow-hidden">
+      {stadium.photoUrl ? (
+        <img src={stadium.photoUrl} alt={stadium.name} loading="lazy" class="w-full h-full object-cover" />
+      ) : (
+        <div class="w-full h-full grid place-items-center text-fumo">
+          <span class="font-display text-xs tracking-[0.25em] uppercase">Foto in arrivo</span>
+        </div>
+      )}
+    </div>
+
+    <div>
+      <p class="font-display text-xs tracking-[0.3em] uppercase text-oro mb-3">Il campo</p>
+      <h2 class="font-display text-2xl md:text-3xl text-panna mb-6">{stadium.name || "Campo settore giovanile"}</h2>
+      {stadium.description && (
+        <div class="text-fumo leading-relaxed space-y-4">
+          {stadium.description.split(/\n\n+/).map((p) => <p>{p}</p>)}
+        </div>
+      )}
+      {(stadium.address || stadium.city) && (
+        <div class="mt-8 border-l-2 border-rosso pl-4">
+          <p class="font-display text-xs tracking-[0.2em] uppercase text-fumo mb-1">Indirizzo</p>
+          <p class="text-panna leading-relaxed">
+            {stadium.address}{stadium.address && stadium.city ? <br /> : null}
+            {stadium.city}
+          </p>
+        </div>
+      )}
+      {stadium.mapsUrl && (
+        <a href={stadium.mapsUrl} target="_blank" rel="noopener" class="btn btn-primary mt-6 inline-flex">
+          Apri su Google Maps
+        </a>
+      )}
+      <p class="mt-10 text-xs text-fumo">
+        <a href="/settore-giovanile" class="hover:text-oro">← Torna al settore giovanile</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>

@@ -21,6 +21,31 @@ export type Match = {
   status: "upcoming" | "live" | "finished";
   score?: { home: number; away: number };
   kickoffTs: number;
+  youthCategoryId?: number;
+};
+
+export type YouthCategory = {
+  id: number;
+  season: number;
+  slug: string;
+  name: string;
+  description?: string;
+  ordering: number;
+};
+
+export type YouthStanding = {
+  id: number;
+  youthCategoryId: number;
+  pos: number;
+  team: string;
+  p: number;
+  w: number;
+  d: number;
+  l: number;
+  gf: number;
+  ga: number;
+  pts: number;
+  highlight: boolean;
 };
 
 export type StandingRow = {
@@ -68,6 +93,8 @@ export type StaffMember = {
   role: string;
   group: "Tecnico" | "Medico" | "Dirigenza";
   photoUrl?: string;
+  youthCategoryId?: number;
+  isYouthManagement?: boolean;
 };
 
 export type Sponsor = {
@@ -111,6 +138,7 @@ const rowToMatch = (r: Record<string, unknown>): Match => ({
     ? { home: Number(r.score_home), away: Number(r.score_away) }
     : undefined,
   kickoffTs: Number(r.kickoff_ts),
+  youthCategoryId: r.youth_category_id != null ? Number(r.youth_category_id) : undefined,
 });
 
 const MATCH_SELECT_WITH_CRESTS = `
@@ -124,7 +152,7 @@ const MATCH_SELECT_WITH_CRESTS = `
 
 export async function getAllMatches(season: number): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? ORDER BY m.kickoff_ts ASC`,
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.youth_category_id IS NULL ORDER BY m.kickoff_ts ASC`,
     args: [season],
   });
   return rows.map(rowToMatch);
@@ -132,7 +160,7 @@ export async function getAllMatches(season: number): Promise<Match[]> {
 
 export async function getColleferroMatches(season: number): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC`,
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.youth_category_id IS NULL AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC`,
     args: [season, "Colleferro", "Colleferro"],
   });
   return rows.map(rowToMatch);
@@ -140,7 +168,7 @@ export async function getColleferroMatches(season: number): Promise<Match[]> {
 
 export async function getNextMatch(season: number): Promise<Match | null> {
   const { rows } = await db.execute({
-    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.status = 'upcoming' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC LIMIT 1`,
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.youth_category_id IS NULL AND m.status = 'upcoming' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts ASC LIMIT 1`,
     args: [season, "Colleferro", "Colleferro"],
   });
   return rows[0] ? rowToMatch(rows[0]) : null;
@@ -148,7 +176,7 @@ export async function getNextMatch(season: number): Promise<Match | null> {
 
 export async function getLastResults(season: number, limit = 3): Promise<Match[]> {
   const { rows } = await db.execute({
-    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.status = 'finished' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts DESC LIMIT ?`,
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.season = ? AND m.youth_category_id IS NULL AND m.status = 'finished' AND (m.home_name = ? OR m.away_name = ?) ORDER BY m.kickoff_ts DESC LIMIT ?`,
     args: [season, "Colleferro", "Colleferro", limit],
   });
   return rows.map(rowToMatch);
@@ -157,7 +185,7 @@ export async function getLastResults(season: number, limit = 3): Promise<Match[]
 export async function getStandings(season: number): Promise<StandingRow[]> {
   const { rows } = await db.execute({
     sql: `SELECT home_name, away_name, score_home, score_away FROM matches
-          WHERE season = ? AND status = 'finished' AND score_home IS NOT NULL AND score_away IS NOT NULL`,
+          WHERE season = ? AND youth_category_id IS NULL AND status = 'finished' AND score_home IS NOT NULL AND score_away IS NOT NULL`,
     args: [season],
   });
   type Stats = { team: string; p: number; w: number; d: number; l: number; gf: number; ga: number; pts: number };
@@ -307,19 +335,41 @@ export async function getSquad(season: number): Promise<Player[]> {
   }));
 }
 
+const rowToStaff = (r: Record<string, unknown>): StaffMember => ({
+  id: Number(r.id),
+  season: Number(r.season),
+  name: r.name as string,
+  role: r.role as string,
+  group: r.grp as StaffMember["group"],
+  photoUrl: (r.photo_url as string | null) ?? undefined,
+  youthCategoryId: r.youth_category_id != null ? Number(r.youth_category_id) : undefined,
+  isYouthManagement: Number(r.is_youth_management ?? 0) === 1,
+});
+
+const STAFF_ORDER = "ORDER BY CASE grp WHEN 'Tecnico' THEN 1 WHEN 'Medico' THEN 2 WHEN 'Dirigenza' THEN 3 END, ordering ASC, id ASC";
+
 export async function getStaff(season: number): Promise<StaffMember[]> {
   const { rows } = await db.execute({
-    sql: "SELECT * FROM staff WHERE season = ? ORDER BY CASE grp WHEN 'Tecnico' THEN 1 WHEN 'Medico' THEN 2 WHEN 'Dirigenza' THEN 3 END, ordering ASC, id ASC",
+    sql: `SELECT * FROM staff WHERE season = ? AND youth_category_id IS NULL AND is_youth_management = 0 ${STAFF_ORDER}`,
     args: [season],
   });
-  return rows.map((r) => ({
-    id: Number(r.id),
-    season: Number(r.season),
-    name: r.name as string,
-    role: r.role as string,
-    group: r.grp as StaffMember["group"],
-    photoUrl: (r.photo_url as string | null) ?? undefined,
-  }));
+  return rows.map(rowToStaff);
+}
+
+export async function getYouthManagement(season: number): Promise<StaffMember[]> {
+  const { rows } = await db.execute({
+    sql: `SELECT * FROM staff WHERE season = ? AND is_youth_management = 1 ${STAFF_ORDER}`,
+    args: [season],
+  });
+  return rows.map(rowToStaff);
+}
+
+export async function getYouthCategoryStaff(youthCategoryId: number): Promise<StaffMember[]> {
+  const { rows } = await db.execute({
+    sql: `SELECT * FROM staff WHERE youth_category_id = ? ${STAFF_ORDER}`,
+    args: [youthCategoryId],
+  });
+  return rows.map(rowToStaff);
 }
 
 export async function getSponsors(season: number): Promise<Sponsor[]> {
@@ -335,4 +385,86 @@ export async function getSponsors(season: number): Promise<Sponsor[]> {
     url: (r.url as string | null) ?? undefined,
     logoUrl: (r.logo_url as string | null) ?? undefined,
   }));
+}
+
+// ----- Settore giovanile ---------------------------------------------------
+
+const rowToYouthCategory = (r: Record<string, unknown>): YouthCategory => ({
+  id: Number(r.id),
+  season: Number(r.season),
+  slug: r.slug as string,
+  name: r.name as string,
+  description: (r.description as string | null) ?? undefined,
+  ordering: Number(r.ordering),
+});
+
+export async function getYouthCategories(season: number): Promise<YouthCategory[]> {
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM youth_categories WHERE season = ? ORDER BY ordering ASC, name ASC",
+    args: [season],
+  });
+  return rows.map(rowToYouthCategory);
+}
+
+export async function getYouthCategoryBySlug(
+  season: number,
+  slug: string,
+): Promise<YouthCategory | null> {
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM youth_categories WHERE season = ? AND slug = ? LIMIT 1",
+    args: [season, slug],
+  });
+  return rows[0] ? rowToYouthCategory(rows[0]) : null;
+}
+
+export async function getYouthCategoryById(id: number): Promise<YouthCategory | null> {
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM youth_categories WHERE id = ? LIMIT 1",
+    args: [id],
+  });
+  return rows[0] ? rowToYouthCategory(rows[0]) : null;
+}
+
+export async function getYouthCategoryMatches(youthCategoryId: number): Promise<Match[]> {
+  const { rows } = await db.execute({
+    sql: `${MATCH_SELECT_WITH_CRESTS} WHERE m.youth_category_id = ? ORDER BY m.kickoff_ts ASC`,
+    args: [youthCategoryId],
+  });
+  return rows.map(rowToMatch);
+}
+
+export async function getYouthStandings(youthCategoryId: number): Promise<YouthStanding[]> {
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM youth_standings WHERE youth_category_id = ? ORDER BY pos ASC",
+    args: [youthCategoryId],
+  });
+  return rows.map((r) => ({
+    id: Number(r.id),
+    youthCategoryId: Number(r.youth_category_id),
+    pos: Number(r.pos),
+    team: r.team as string,
+    p: Number(r.played),
+    w: Number(r.wins),
+    d: Number(r.draws),
+    l: Number(r.losses),
+    gf: Number(r.goals_for),
+    ga: Number(r.goals_against),
+    pts: Number(r.points),
+    highlight: Number(r.highlight) === 1,
+  }));
+}
+
+export async function getYouthNews(limit?: number): Promise<NewsPost[]> {
+  const { rows } = await db.execute(
+    limit != null
+      ? {
+          sql: "SELECT * FROM news WHERE category = 'Giovanili' ORDER BY date_iso DESC LIMIT ?",
+          args: [limit],
+        }
+      : {
+          sql: "SELECT * FROM news WHERE category = 'Giovanili' ORDER BY date_iso DESC",
+          args: [],
+        },
+  );
+  return rows.map(rowToNews);
 }

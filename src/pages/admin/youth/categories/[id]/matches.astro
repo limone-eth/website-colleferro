@@ -1,0 +1,182 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getYouthCategoryById, getYouthCategoryMatches } from "@/lib/db";
+import { upsertMatch, deleteMatch } from "@/lib/db-write";
+import { dateFieldsFromInput, shortFor } from "@/lib/match-utils";
+import { formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/youth");
+const catId = Number(id);
+
+const category = await getYouthCategoryById(catId);
+if (!category) return new Response("Categoria non trovata", { status: 404 });
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deleteMatch(String(f.get("id")));
+    } else if (action === "create") {
+      const opponent = String(f.get("opponent") ?? "").trim();
+      if (!opponent) throw new Error("Nome avversario richiesto.");
+      const home = String(f.get("home") ?? "casa") === "casa";
+      const matchday = String(f.get("matchday") ?? "").trim();
+      const competition = String(f.get("competition") ?? "").trim() || category.name;
+      const venue = String(f.get("venue") ?? "").trim();
+      const status = String(f.get("status") ?? "upcoming") as "upcoming" | "live" | "finished";
+      const scoreHome = f.get("scoreHome") ? Number(f.get("scoreHome")) : null;
+      const scoreAway = f.get("scoreAway") ? Number(f.get("scoreAway")) : null;
+      const fields = dateFieldsFromInput(
+        String(f.get("matchDate") ?? ""),
+        String(f.get("matchTime") ?? "15:00"),
+      );
+      const matchId = `y-${crypto.randomUUID().slice(0, 8)}`;
+      const homeName = home ? "Colleferro" : opponent;
+      const awayName = home ? opponent : "Colleferro";
+      await upsertMatch({
+        id: matchId,
+        season: category.season,
+        matchday,
+        competition,
+        date: fields.date,
+        dateLong: fields.dateLong,
+        time: fields.time,
+        homeName,
+        homeShort: shortFor(homeName),
+        awayName,
+        awayShort: shortFor(awayName),
+        venue,
+        status,
+        scoreHome,
+        scoreAway,
+        kickoffTs: fields.kickoffTs,
+        youthCategoryId: catId,
+      });
+    }
+    return Astro.redirect(`/admin/youth/categories/${catId}/matches`);
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const matches = await getYouthCategoryMatches(catId);
+---
+
+<AdminLayout title={`Partite · ${category.name}`} current="youth">
+  <div class="mb-6 border-b border-carbone pb-4 flex items-end justify-between">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">{category.name} · {formatSeason(category.season)}</p>
+      <h1 class="font-display text-2xl text-panna">Calendario e risultati</h1>
+    </div>
+    <a href={`/admin/youth/categories/${catId}`} class="btn btn-ghost">Indietro</a>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-5 space-y-4 mb-8">
+    <input type="hidden" name="action" value="create" />
+    <div class="grid md:grid-cols-4 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Giornata (testo)</span>
+        <input name="matchday" placeholder="3ª Giornata" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block md:col-span-2">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Competizione</span>
+        <input name="competition" placeholder={category.name} class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Stato</span>
+        <select name="status" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+          <option value="upcoming">In programma</option>
+          <option value="live">In corso</option>
+          <option value="finished">Conclusa</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-3">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Data</span>
+        <input type="date" name="matchDate" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Ora</span>
+        <input type="time" name="matchTime" required value="15:00" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Casa/Trasferta</span>
+        <select name="home" class="w-full bg-nero border border-carbone px-3 py-2 text-panna">
+          <option value="casa">Colleferro in casa</option>
+          <option value="trasferta">Colleferro in trasferta</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Avversario</span>
+        <input name="opponent" required class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3">
+      <label class="block md:col-span-1">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Stadio / Campo</span>
+        <input name="venue" placeholder="Campo …" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Gol casa</span>
+        <input type="number" name="scoreHome" min="0" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-1">Gol ospite</span>
+        <input type="number" name="scoreAway" min="0" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Aggiungi partita</button>
+  </form>
+
+  <table class="w-full text-sm">
+    <thead class="border-b border-carbone">
+      <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+        <th class="py-3 pr-4">Giornata</th>
+        <th class="py-3 pr-4">Partita</th>
+        <th class="py-3 pr-4">Data</th>
+        <th class="py-3 pr-4">Stato</th>
+        <th class="py-3 pr-4">Risultato</th>
+        <th class="py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {matches.map((m) => (
+        <tr class="border-b border-carbone/60">
+          <td class="py-3 pr-4 text-fumo text-xs">{m.matchday}</td>
+          <td class="py-3 pr-4 text-panna">{m.home.name} – {m.away.name}</td>
+          <td class="py-3 pr-4 text-fumo text-xs">{m.date} · {m.time}</td>
+          <td class="py-3 pr-4">
+            <span class={`font-display text-[0.65rem] tracking-wider uppercase px-2 py-1 ${
+              m.status === "finished" ? "bg-carbone text-fumo" :
+              m.status === "live" ? "bg-rosso text-panna" :
+              "bg-oro/20 text-oro"
+            }`}>{m.status}</span>
+          </td>
+          <td class="py-3 pr-4 tabular-nums">{m.score ? `${m.score.home}–${m.score.away}` : "—"}</td>
+          <td class="py-3 flex gap-2 justify-end">
+            <a href={`/admin/youth/categories/${catId}/matches/${m.id}`} class="btn btn-ghost text-xs">Modifica</a>
+            <form method="post" onsubmit="return confirm('Eliminare questa partita?')">
+              <input type="hidden" name="action" value="delete" />
+              <input type="hidden" name="id" value={m.id} />
+              <button type="submit" class="btn btn-ghost text-xs text-rosso">Elimina</button>
+            </form>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</AdminLayout>

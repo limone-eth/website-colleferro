@@ -1,0 +1,170 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getYouthCategoryById, getYouthStandings } from "@/lib/db";
+import { upsertYouthStanding, deleteYouthStanding } from "@/lib/db-write";
+import { formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/youth");
+const catId = Number(id);
+
+const category = await getYouthCategoryById(catId);
+if (!category) return new Response("Categoria non trovata", { status: 404 });
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  const action = f.get("action");
+  try {
+    if (action === "delete") {
+      await deleteYouthStanding(Number(f.get("id")));
+    } else {
+      const row = {
+        youthCategoryId: catId,
+        pos: Number(f.get("pos") ?? 0),
+        team: String(f.get("team") ?? "").trim(),
+        p: Number(f.get("p") ?? 0),
+        w: Number(f.get("w") ?? 0),
+        d: Number(f.get("d") ?? 0),
+        l: Number(f.get("l") ?? 0),
+        gf: Number(f.get("gf") ?? 0),
+        ga: Number(f.get("ga") ?? 0),
+        pts: Number(f.get("pts") ?? 0),
+        highlight: String(f.get("highlight") ?? "") === "1",
+      };
+      if (!row.team) throw new Error("Nome squadra richiesto.");
+      if (action === "update") {
+        const rowId = Number(f.get("id"));
+        await upsertYouthStanding(row, rowId);
+      } else {
+        await upsertYouthStanding(row);
+      }
+    }
+    return Astro.redirect(`/admin/youth/categories/${catId}/standings`);
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const standings = await getYouthStandings(catId);
+---
+
+<AdminLayout title={`Classifica · ${category.name}`} current="youth">
+  <div class="mb-6 border-b border-carbone pb-4 flex items-end justify-between">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">{category.name} · {formatSeason(category.season)}</p>
+      <h1 class="font-display text-2xl text-panna">Classifica</h1>
+      <p class="text-fumo text-xs mt-2">Inserita manualmente, una riga per squadra. Spunta "Evidenzia" sulla riga del Colleferro.</p>
+    </div>
+    <a href={`/admin/youth/categories/${catId}`} class="btn btn-ghost">Indietro</a>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+
+  <form method="post" class="bg-grafite border border-carbone p-4 mb-6">
+    <input type="hidden" name="action" value="create" />
+    <p class="font-display text-xs uppercase text-fumo mb-2">Aggiungi riga</p>
+    <div class="grid grid-cols-2 md:grid-cols-10 gap-2 items-end">
+      <label class="block col-span-1"><span class="text-xs text-fumo">Pos</span>
+        <input type="number" name="pos" required min="1" value={standings.length + 1} class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block col-span-2 md:col-span-3"><span class="text-xs text-fumo">Squadra</span>
+        <input name="team" required class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">G</span>
+        <input type="number" name="p" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">V</span>
+        <input type="number" name="w" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">N</span>
+        <input type="number" name="d" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">P</span>
+        <input type="number" name="l" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">GF</span>
+        <input type="number" name="gf" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">GS</span>
+        <input type="number" name="ga" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+      <label class="block"><span class="text-xs text-fumo">Pti</span>
+        <input type="number" name="pts" min="0" value="0" class="w-full bg-nero border border-carbone px-2 py-1.5 text-panna" />
+      </label>
+    </div>
+    <div class="flex items-center justify-between mt-3">
+      <label class="flex items-center gap-2 text-xs text-fumo">
+        <input type="checkbox" name="highlight" value="1" class="accent-rosso" />
+        Evidenzia (Colleferro)
+      </label>
+      <button type="submit" class="btn btn-primary text-xs">Aggiungi</button>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="border-b border-carbone">
+        <tr class="text-left text-fumo font-display text-xs tracking-wider uppercase">
+          <th class="py-2 pr-2">Pos</th>
+          <th class="py-2 pr-2">Squadra</th>
+          <th class="py-2 pr-2">G</th>
+          <th class="py-2 pr-2">V</th>
+          <th class="py-2 pr-2">N</th>
+          <th class="py-2 pr-2">P</th>
+          <th class="py-2 pr-2">GF</th>
+          <th class="py-2 pr-2">GS</th>
+          <th class="py-2 pr-2">Pti</th>
+          <th class="py-2 pr-2"></th>
+          <th class="py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {standings.map((s) => (
+          <tr class={`border-b border-carbone/60 ${s.highlight ? "bg-rosso/10" : ""}`}>
+            <td colspan="11" class="py-1">
+              <form method="post" class="flex gap-1 items-center text-xs">
+                <input type="hidden" name="action" value="update" />
+                <input type="hidden" name="id" value={s.id} />
+                <input type="number" name="pos" value={s.pos} min="1" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input name="team" required value={s.team} class="flex-1 bg-nero border border-carbone px-2 py-1 text-panna" />
+                <input type="number" name="p" value={s.p} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="w" value={s.w} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="d" value={s.d} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="l" value={s.l} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="gf" value={s.gf} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="ga" value={s.ga} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <input type="number" name="pts" value={s.pts} min="0" class="w-12 bg-nero border border-carbone px-1.5 py-1 text-panna tabular-nums" />
+                <label class="flex items-center gap-1 text-fumo">
+                  <input type="checkbox" name="highlight" value="1" checked={s.highlight} class="accent-rosso" />
+                  Evid.
+                </label>
+                <button type="submit" class="btn btn-ghost text-xs">Salva</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {standings.length > 0 && (
+    <div class="mt-6">
+      <p class="font-display text-xs uppercase text-fumo mb-3">Elimina riga</p>
+      <div class="flex flex-wrap gap-2">
+        {standings.map((s) => (
+          <form method="post" onsubmit="return confirm('Eliminare questa riga?')">
+            <input type="hidden" name="action" value="delete" />
+            <input type="hidden" name="id" value={s.id} />
+            <button type="submit" class="btn btn-ghost text-xs text-rosso">{s.pos}. {s.team} ✕</button>
+          </form>
+        ))}
+      </div>
+    </div>
+  )}
+</AdminLayout>

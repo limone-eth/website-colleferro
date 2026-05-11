@@ -1,0 +1,58 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import NewsCard from "@/components/NewsCard.astro";
+import { getYouthNews } from "@/lib/db";
+import { firstImageFromHtml } from "@/lib/seo";
+import { CLD } from "@/lib/cloudinary";
+
+const news = await getYouthNews();
+const newsCardImage = (body: string) => {
+  const src = firstImageFromHtml(body);
+  return src ? (CLD.newsCard(src) ?? src) : undefined;
+};
+const [first, ...rest] = news;
+---
+
+<BaseLayout
+  title="News Settore Giovanile — Colleferro Calcio"
+  description="Tutte le news del settore giovanile del Colleferro Calcio."
+>
+  <Hero
+    eyebrow="Settore Giovanile"
+    title="News del vivaio"
+    subtitle="Aggiornamenti, risultati e storie dalle categorie del settore giovanile rossonero."
+  />
+
+  <section class="max-w-7xl mx-auto px-5 lg:px-8 py-20 md:py-24">
+    {news.length === 0 ? (
+      <div class="bg-grafite border border-carbone p-10 text-center">
+        <p class="text-fumo">Ancora nessuna news del settore giovanile pubblicata.</p>
+      </div>
+    ) : (
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {first && (
+          <NewsCard
+            slug={first.slug}
+            title={first.title}
+            excerpt={first.excerpt}
+            date={first.date}
+            category={first.category}
+            image={newsCardImage(first.body)}
+            featured={true}
+          />
+        )}
+        {rest.map((n) => (
+          <NewsCard
+            slug={n.slug}
+            title={n.title}
+            excerpt={n.excerpt}
+            date={n.date}
+            category={n.category}
+            image={newsCardImage(n.body)}
+          />
+        ))}
+      </div>
+    )}
+  </section>
+</BaseLayout>

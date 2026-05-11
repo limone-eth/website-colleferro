@@ -1,0 +1,92 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { getYouthCategories, getYouthManagement, db } from "@/lib/db";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
+
+const [categories, management] = await Promise.all([
+  getYouthCategories(season),
+  getYouthManagement(season),
+]);
+
+// Count helpers per category
+const catIds = categories.map((c) => c.id);
+async function countForCategory(table: "staff" | "matches" | "youth_standings", catId: number): Promise<number> {
+  const col = table === "youth_standings" ? "youth_category_id" : "youth_category_id";
+  const { rows } = await db.execute({
+    sql: `SELECT COUNT(*) AS c FROM ${table} WHERE ${col} = ?`,
+    args: [catId],
+  });
+  return Number((rows[0] as { c: number }).c);
+}
+const counts = await Promise.all(
+  catIds.map(async (id) => ({
+    id,
+    staff: await countForCategory("staff", id),
+    matches: await countForCategory("matches", id),
+    standings: await countForCategory("youth_standings", id),
+  })),
+);
+const countsById = new Map(counts.map((c) => [c.id, c]));
+---
+
+<AdminLayout title="Settore Giovanile" current="youth">
+  <div class="mb-8 border-b border-carbone pb-4 flex items-end justify-between gap-4">
+    <div>
+      <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">
+        Settore Giovanile · Stagione {formatSeason(season)}
+      </p>
+      <h1 class="font-display text-2xl text-panna">Gestione settore giovanile</h1>
+    </div>
+    <a href="/admin/youth/categories/new" class="btn btn-primary">Nuova categoria</a>
+  </div>
+
+  <section class="mb-10">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <a href="/admin/youth/management" class="bg-grafite border border-carbone hover:border-oro/60 p-6 transition-colors block">
+        <div class="flex items-baseline justify-between mb-2">
+          <span class="font-display text-lg text-panna">Organigramma</span>
+          <span class="font-display text-3xl font-bold text-oro tabular-nums">{management.length}</span>
+        </div>
+        <p class="text-fumo text-sm">Responsabile, coordinatore, segretario del settore giovanile.</p>
+      </a>
+      <a href="/admin/youth/stadium" class="bg-grafite border border-carbone hover:border-oro/60 p-6 transition-colors block">
+        <span class="font-display text-lg text-panna block mb-2">Stadio / Campo</span>
+        <p class="text-fumo text-sm">Nome, indirizzo, descrizione e foto del campo del settore giovanile.</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="font-display text-lg text-panna mb-4">Categorie</h2>
+    {categories.length === 0 ? (
+      <div class="bg-grafite border border-carbone p-8 text-center">
+        <p class="text-fumo">Nessuna categoria ancora creata.</p>
+        <a href="/admin/youth/categories/new" class="btn btn-primary mt-4 inline-flex">Crea la prima categoria</a>
+      </div>
+    ) : (
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {categories.map((c) => {
+          const k = countsById.get(c.id);
+          return (
+            <a href={`/admin/youth/categories/${c.id}`} class="bg-grafite border border-carbone hover:border-oro/60 p-5 transition-colors block">
+              <p class="font-display text-[0.65rem] tracking-[0.25em] uppercase text-oro mb-1">Categoria</p>
+              <h3 class="font-display text-xl text-panna">{c.name}</h3>
+              {c.description && <p class="text-fumo text-xs mt-2 line-clamp-2">{c.description}</p>}
+              <div class="flex gap-4 mt-4 text-xs text-fumo">
+                <span>Tecnici · <span class="text-oro">{k?.staff ?? 0}</span></span>
+                <span>Partite · <span class="text-oro">{k?.matches ?? 0}</span></span>
+                <span>Classifica · <span class="text-oro">{k?.standings ?? 0}</span></span>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+  </section>
+</AdminLayout>

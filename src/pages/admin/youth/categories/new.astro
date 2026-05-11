@@ -1,0 +1,80 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { requireAdmin } from "@/lib/auth";
+import { upsertYouthCategory } from "@/lib/db-write";
+import { getYouthCategories, db } from "@/lib/db";
+import { resolveAdminSeason, formatSeason } from "@/lib/season";
+
+const guard = requireAdmin(Astro);
+if (guard) return guard;
+
+const season = await resolveAdminSeason(Astro.cookies);
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+let error: string | undefined;
+
+if (Astro.request.method === "POST") {
+  const f = await Astro.request.formData();
+  try {
+    const name = String(f.get("name") ?? "").trim();
+    if (!name) throw new Error("Nome richiesto.");
+    let slug = String(f.get("slug") ?? "").trim();
+    if (!slug) slug = slugify(name);
+    else slug = slugify(slug);
+    if (!slug) throw new Error("Slug non valido.");
+    const { rows } = await db.execute({
+      sql: "SELECT id FROM youth_categories WHERE season = ? AND slug = ?",
+      args: [season, slug],
+    });
+    if (rows.length > 0) throw new Error("Esiste già una categoria con questo slug in questa stagione.");
+    const ordering = Number(f.get("ordering") ?? 0);
+    const description = String(f.get("description") ?? "").trim() || null;
+    await upsertYouthCategory({ season, slug, name, description, ordering });
+    return Astro.redirect("/admin/youth");
+  } catch (e) {
+    error = (e as Error).message;
+  }
+}
+
+const existing = await getYouthCategories(season);
+---
+
+<AdminLayout title="Nuova categoria" current="youth">
+  <h1 class="font-display text-2xl text-panna mb-2">Nuova categoria settore giovanile</h1>
+  <p class="text-fumo text-xs mb-6">Stagione {formatSeason(season)}</p>
+
+  <form method="post" class="bg-grafite border border-carbone p-6 space-y-5">
+    {error && <p class="text-sm text-rosso border border-rosso/40 bg-rosso/10 px-3 py-2">{error}</p>}
+    <div class="grid md:grid-cols-2 gap-4">
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-2">Nome categoria</span>
+        <input name="name" required placeholder="Juniores Under 19" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+      </label>
+      <label class="block">
+        <span class="font-display text-xs uppercase text-fumo block mb-2">Slug (url)</span>
+        <input name="slug" placeholder="juniores-under-19" class="w-full bg-nero border border-carbone px-3 py-2 text-panna" />
+        <p class="text-xs text-fumo mt-1">Lasciato vuoto, viene generato dal nome.</p>
+      </label>
+    </div>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Descrizione (opzionale)</span>
+      <textarea name="description" rows="3" placeholder="Allenamenti mar-gio 18:00-19:30 al campo …" class="w-full bg-nero border border-carbone px-3 py-2 text-panna"></textarea>
+    </label>
+    <label class="block">
+      <span class="font-display text-xs uppercase text-fumo block mb-2">Ordine</span>
+      <input type="number" name="ordering" value={existing.length} class="w-32 bg-nero border border-carbone px-3 py-2 text-panna" />
+    </label>
+    <div class="flex gap-3 pt-2">
+      <button type="submit" class="btn btn-primary">Crea categoria</button>
+      <a href="/admin/youth" class="btn btn-ghost">Annulla</a>
+    </div>
+  </form>
+</AdminLayout>
