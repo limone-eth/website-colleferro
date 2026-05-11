@@ -17,7 +17,7 @@ export const SITE = {
   vatId: "IT05572841004",
   taxId: "05572841004",
   telephone: "+39 06 8678 9639",
-  email: "info@colleferrocalcio.it",
+  email: "ssdcolleferrocalcio@libero.it",
 } as const;
 
 export function absoluteUrl(pathOrUrl: string, base: URL | string): string {
