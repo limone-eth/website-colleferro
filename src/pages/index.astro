@@ -15,7 +15,13 @@ import {
   getSponsors,
 } from "@/lib/db";
 import { getCurrentSeasonYear } from "@/lib/season";
-import { SITE, absoluteUrl, jsonLdString } from "@/lib/seo";
+import { SITE, absoluteUrl, jsonLdString, firstImageFromHtml } from "@/lib/seo";
+import { CLD } from "@/lib/cloudinary";
+
+const newsCardImage = (body: string) => {
+  const src = firstImageFromHtml(body);
+  return src ? (CLD.newsCard(src) ?? src) : undefined;
+};
 
 const season = await getCurrentSeasonYear();
 const [nextMatch, lastResults, allNews, featuredNews, standings, sponsors] = await Promise.all([
@@ -225,6 +231,7 @@ const websiteJsonLd = {
           excerpt={featuredNews.excerpt}
           date={featuredNews.date}
           category={featuredNews.category}
+          image={newsCardImage(featuredNews.body)}
           featured={true}
         />
       )}
@@ -236,6 +243,7 @@ const websiteJsonLd = {
             excerpt={n.excerpt}
             date={n.date}
             category={n.category}
+            image={newsCardImage(n.body)}
           />
         ))
       }

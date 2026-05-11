@@ -3,8 +3,14 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Hero from "@/components/Hero.astro";
 import NewsCard from "@/components/NewsCard.astro";
 import { getAllNews } from "@/lib/db";
+import { firstImageFromHtml } from "@/lib/seo";
+import { CLD } from "@/lib/cloudinary";
 
 const news = await getAllNews();
+const newsCardImage = (body: string) => {
+  const src = firstImageFromHtml(body);
+  return src ? (CLD.newsCard(src) ?? src) : undefined;
+};
 const [first, ...rest] = news;
 ---
 
@@ -27,6 +33,7 @@ const [first, ...rest] = news;
           excerpt={first.excerpt}
           date={first.date}
           category={first.category}
+          image={newsCardImage(first.body)}
           featured={true}
         />
       )}
@@ -38,6 +45,7 @@ const [first, ...rest] = news;
             excerpt={n.excerpt}
             date={n.date}
             category={n.category}
+            image={newsCardImage(n.body)}
           />
         ))
       }

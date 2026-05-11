@@ -110,15 +110,20 @@ const jsonLd = {
         <h2 class="font-display text-2xl md:text-3xl text-panna mb-8">Continua a leggere</h2>
         <div class="grid md:grid-cols-3 gap-6">
           {
-            related.map((n) => (
-              <NewsCard
-                slug={n.slug}
-                title={n.title}
-                excerpt={n.excerpt}
-                date={n.date}
-                category={n.category}
-              />
-            ))
+            related.map((n) => {
+              const thumb = firstImageFromHtml(n.body);
+              const image = thumb ? (CLD.newsCard(thumb) ?? thumb) : undefined;
+              return (
+                <NewsCard
+                  slug={n.slug}
+                  title={n.title}
+                  excerpt={n.excerpt}
+                  date={n.date}
+                  category={n.category}
+                  image={image}
+                />
+              );
+            })
           }
         </div>
       </div>
